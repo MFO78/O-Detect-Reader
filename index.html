@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperture Tolerance Analyzer</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly.js for advanced charting -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- jsPDF for robust, direct-to-image PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
+        
+        /* Compact numerical inputs for the chart controls */
+        .chart-controls input[type="number"] { width: 4rem; font-size: 0.75rem; padding: 0.25rem; }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row overflow-hidden text-slate-800">
+
+    <!-- Sidebar Controls -->
+    <aside class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 shrink-0">
+        <div class="p-5 border-b border-slate-200 bg-slate-50">
+            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-microscope text-blue-600"></i>
+                Aperture Analyzer
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">XYZ Coordinate Tolerance Tracking</p>
+        </div>
+
+        <div class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+            
+            <!-- Metadata Section -->
+            <div class="space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Part Info</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-medium mb-1 text-slate-700">Part Number</label>
+                        <input type="text" id="inpPartNum" placeholder="e.g. PN-123" class="block w-full text-sm p-1.5 border border-slate-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium mb-1 text-slate-700">Serial No.</label>
+                        <input type="text" id="inpSerialNum" placeholder="e.g. SN-456" class="block w-full text-sm p-1.5 border border-slate-300 rounded-md">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium mb-1 text-slate-700">Comments</label>
+                    <textarea id="inpComments" rows="2" placeholder="Optional notes..." class="block w-full text-sm p-1.5 border border-slate-300 rounded-md custom-scrollbar"></textarea>
+                </div>
+            </div>
+
+            <!-- Data Loading Section -->
+            <div class="space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">1. Data Source</h2>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1">Upload XYZ File (.txt, .csv)</label>
+                    <input type="file" id="fileInput" accept=".txt,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md">
+                    <p class="text-xs text-slate-400 mt-1">Format: X Y Z</p>
+                </div>
+
+                <div class="relative flex items-center py-2">
+                    <div class="flex-grow border-t border-slate-300"></div>
+                    <span class="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">or</span>
+                    <div class="flex-grow border-t border-slate-300"></div>
+                </div>
+
+                <button id="btnLoadSample" class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 border border-slate-300">
+                    <i class="fa-solid fa-flask"></i> Load Sample Data
+                </button>
+            </div>
+
+            <!-- Processing Parameters -->
+            <div class="space-y-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">2. Configuration</h2>
+                
+                <div>
+                    <label class="block text-xs font-medium mb-1 text-slate-700">Aperture Split Distance</label>
+                    <input type="number" id="inpThreshold" step="any" placeholder="Auto-detect" class="block w-full text-sm p-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-[10px] text-slate-400 mt-1 leading-tight">Max distance between points before starting a new aperture.</p>
+                </div>
+
+                <div class="p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Lattice primary step vector is automatically derived via global median analysis to ensure consistency.
+                </div>
+
+                <button id="btnProcess" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-gears"></i> Process Coordinates
+                </button>
+            </div>
+
+            <!-- Summary Stats -->
+            <div id="summaryPanel" class="space-y-3 hidden border-t border-slate-200 pt-5 mt-2">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Data Summary</h2>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                        <span class="block text-xs text-slate-500">Total Points</span>
+                        <span id="statTotalPoints" class="font-bold text-slate-800">0</span>
+                    </div>
+                    <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                        <span class="block text-xs text-slate-500">Apertures</span>
+                        <span id="statApertures" class="font-bold text-slate-800">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div id="exportPanel" class="space-y-3 hidden border-t border-slate-200 pt-5 mt-2">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">3. Export</h2>
+                <button id="btnDownloadPDF" class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+                </button>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-slate-100 flex flex-col gap-6 relative" id="mainContainer">
+        
+        <!-- Welcome Screen -->
+        <div id="welcomeScreen" class="absolute inset-0 flex items-center justify-center bg-slate-100 z-10">
+            <div class="text-center max-w-md p-8 glass-panel rounded-xl shadow-lg">
+                <i class="fa-solid fa-cubes text-5xl text-blue-500 mb-4"></i>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Aperture Array Analyzer</h2>
+                <p class="text-slate-600 mb-6 text-sm">Upload a text file of raw XYZ measurements to extract array stepping logic and monitor manufacturing tolerances of specific features across the array.</p>
+                <p class="text-slate-500 text-xs">Use the sidebar to load your data or generate a sample dataset to test the features.</p>
+            </div>
+        </div>
+
+        <!-- 3D Overview Chart -->
+        <div class="glass-panel rounded-lg p-4 shadow-sm w-full hidden" id="cardOverview">
+            <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center border-b border-slate-100 pb-2 mb-2 gap-4">
+                <h3 class="text-lg font-semibold flex items-center shrink-0">
+                    <i class="fa-solid fa-cube text-slate-400 mr-2"></i> 3D Array Overview
+                </h3>
+                
+                <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 p-1.5 rounded border border-slate-200">
+                    <div class="flex items-center border-r border-slate-300 pr-2 gap-1">
+                        <span class="text-slate-500 font-medium mr-1">View:</span>
+                        <button onclick="set3DView('xy')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Top (XY)">XY</button>
+                        <button onclick="set3DView('xz')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Front (XZ)">XZ</button>
+                        <button onclick="set3DView('yz')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Side (YZ)">YZ</button>
+                        <button onclick="set3DView('iso')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Isometric">Iso</button>
+                        <button id="btnEqualAxes" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors ml-1" title="Toggle Equal Axes (1:1:1)">1:1:1</button>
+                    </div>
+
+                    <div class="flex flex-wrap items-center border-r border-slate-300 pr-2 gap-2">
+                        <div class="flex items-center gap-1" title="Points Color">
+                            <input type="color" id="inpMarkerColor" value="#3b82f6" class="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0" onchange="update3DOverview()">
+                        </div>
+                        <div class="flex items-center gap-1" title="Centroid Color">
+                            <input type="color" id="inpCentroidColor" value="#ef4444" class="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0" onchange="update3DOverview()">
+                        </div>
+                        <div class="flex items-center gap-1" title="Marker Size">
+                            <span class="text-slate-500">Pts:</span>
+                            <input type="number" id="inpMarkerSize" value="2" min="1" max="15" class="w-10 p-1 border border-slate-300 rounded text-center" onchange="update3DOverview()">
+                        </div>
+                        <div class="flex items-center gap-1" title="Centroid Marker Size">
+                            <span class="text-slate-500">Ctrs:</span>
+                            <input type="number" id="inpCentroidSize" value="2" min="1" max="20" class="w-10 p-1 border border-slate-300 rounded text-center" onchange="update3DOverview()">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3 pl-2">
+                        <label class="flex items-center gap-1 cursor-pointer" title="Show Aperture Numbers">
+                            <input type="checkbox" id="chkShowLabels" class="rounded text-blue-600 focus:ring-blue-500" onchange="update3DOverview()">
+                            <span class="text-slate-600 text-xs font-medium">Labels</span>
+                        </label>
+                        <label class="flex items-center gap-1 cursor-pointer" title="Highlight Out-of-Tolerance Apertures">
+                            <input type="checkbox" id="chkHighlightTol" class="rounded text-red-500 focus:ring-red-500" onchange="update3DOverview()">
+                            <span class="text-slate-600 text-xs font-medium">Fails</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <!-- Modified size class to ensure aspect square logic -->
+            <div id="plotOverview" class="w-full max-w-[900px] aspect-square mx-auto"></div>
+        </div>
+
+        <!-- Stepping Charts (X, Y, Angle) -->
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls" id="cardSteps">
+            
+            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                    <div class="flex-1 break-words">
+                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-left-right text-slate-400 mr-2"></i> X-Lattice</h3>
+                        <p class="text-xs text-slate-500 font-medium" id="avgStepX">Avg: --</p>
+                        <p class="text-[10px] text-slate-500">Absolute X distance to the primary neighbor.</p>
+                    </div>
+                    <!-- Redesigned two-line controls -->
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                                <input type="number" id="fMaxStepX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                <input type="number" id="minStepX" placeholder="Min" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                                <input type="number" id="maxStepX" placeholder="Max" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="inpNomStepX" placeholder="Nom" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
+                                <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                <input type="number" id="inpTolStepX" placeholder="Tol" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plotStepX" class="w-full flex-1 min-h-[250px]"></div>
+            </div>
+            
+            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                    <div class="flex-1 break-words">
+                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-up-down text-slate-400 mr-2"></i> Y-Lattice</h3>
+                        <p class="text-xs text-slate-500 font-medium" id="avgStepY">Avg: --</p>
+                        <p class="text-[10px] text-slate-500">Absolute Y distance to the primary neighbor.</p>
+                    </div>
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                                <input type="number" id="fMaxStepY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                <input type="number" id="minStepY" placeholder="Min" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                                <input type="number" id="maxStepY" placeholder="Max" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="inpNomStepY" placeholder="Nom" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
+                                <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                <input type="number" id="inpTolStepY" placeholder="Tol" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plotStepY" class="w-full flex-1 min-h-[250px]"></div>
+            </div>
+            
+            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                    <div class="flex-1 break-words">
+                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-angle-right text-slate-400 mr-2"></i> Lattice Angle</h3>
+                        <p class="text-xs text-slate-500 font-medium" id="avgAngle">Avg: --</p>
+                        <p class="text-[10px] text-slate-500">Vector angle of the primary step (arctan(ΔY/ΔX)).</p>
+                    </div>
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                                <input type="number" id="fMaxAngle" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                <input type="number" id="minAngle" placeholder="Min" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                                <input type="number" id="maxAngle" placeholder="Max" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="inpNomAngle" placeholder="Nom" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
+                                <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                <input type="number" id="inpTolAngle" placeholder="Tol" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plotAngle" class="w-full flex-1 min-h-[250px]"></div>
+            </div>
+        </div>
+
+        <!-- Bounding Box Charts (Width and Height) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls" id="cardBB">
+            
+            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                    <div class="flex-1 break-words">
+                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Width</h3>
+                        <p class="text-xs text-slate-500 font-medium" id="avgBBX">Avg: --</p>
+                        <p class="text-xs text-slate-500">Maximum span in the X-axis for each aperture.</p>
+                    </div>
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                                <input type="number" id="fMaxBBX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                <input type="number" id="minBBX" placeholder="Min" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                                <input type="number" id="maxBBX" placeholder="Max" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="inpNomBBX" placeholder="Nom" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
+                                <span class="text-xs text-slate-400">&plusmn;</span>
+                                <input type="number" id="inpTolBBX" placeholder="Tol" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plotBBX" class="w-full flex-1 min-h-[300px]"></div>
+            </div>
+            
+            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                    <div class="flex-1 break-words">
+                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Height</h3>
+                        <p class="text-xs text-slate-500 font-medium" id="avgBBY">Avg: --</p>
+                        <p class="text-xs text-slate-500">Maximum span in the Y-axis for each aperture.</p>
+                    </div>
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                                <input type="number" id="fMaxBBY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                <input type="number" id="minBBY" placeholder="Min" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                                <input type="number" id="maxBBY" placeholder="Max" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="inpNomBBY" placeholder="Nom" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
+                                <span class="text-xs text-slate-400">&plusmn;</span>
+                                <input type="number" id="inpTolBBY" placeholder="Tol" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="plotBBY" class="w-full flex-1 min-h-[300px]"></div>
+            </div>
+        </div>
+
+        <!-- Notable Dimensions Section -->
+        <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls" id="cardDimensions">
+            <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-4">
+                <div class="flex-1 break-words">
+                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-ruler-combined text-slate-400"></i> Track Notable Dimensions
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1">Select a target mode to calculate specific distances across the array.</p>
+                </div>
+                
+                <div class="flex items-end gap-3 bg-slate-50 p-3 rounded-md border border-slate-200 flex-wrap shrink-0">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Target Mode</label>
+                        <select id="selDimMode" class="w-40 text-sm p-1.5 border border-slate-300 rounded">
+                            <option value="internal">Intra-Aperture (Pt to Pt)</option>
+                            <option value="neighbor_1">1st Closest Aperture</option>
+                            <option value="neighbor_2">2nd Closest Aperture</option>
+                            <option value="neighbor_3">3rd Closest Aperture</option>
+                        </select>
+                    </div>
+                    <div id="dimPointA_container">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Point A</label>
+                        <select id="selPointA" class="w-24 text-sm p-1.5 border border-slate-300 rounded"></select>
+                    </div>
+                    <div id="dimPointB_container">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Point B</label>
+                        <select id="selPointB" class="w-24 text-sm p-1.5 border border-slate-300 rounded"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Metric</label>
+                        <select id="selMetricType" class="w-32 text-sm p-1.5 border border-slate-300 rounded">
+                            <option value="euclidean">Absolute Distance</option>
+                            <option value="dx">X-Lattice</option>
+                            <option value="dy">Y-Lattice</option>
+                        </select>
+                    </div>
+                    <button id="btnAddDimension" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded font-medium transition-colors">
+                        Add Chart
+                    </button>
+                </div>
+            </div>
+
+            <div id="dynamicChartsContainer" class="space-y-6">
+                <div class="text-center text-slate-400 py-8 text-sm italic" id="emptyDimensionMsg">
+                    No custom dimensions tracking yet. Use the controls above to add one.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const State = {
+            rawPoints: [],       
+            apertures: [],       
+            centroids: [],       
+            xSteps: [],
+            ySteps: [],
+            angles: [],          
+            targetNeighbors: [], 
+            bbWidths: [],        
+            bbHeights: [],       
+            dimensionCharts: 0,  
+            customDims: {},
+            refStep: {dx: 0, dy: 0},
+            outOfTolApertures: new Set(),
+            overviewView: 'iso'
+        };
+
+        const UI = {
+            fileInput: document.getElementById('fileInput'),
+            btnLoadSample: document.getElementById('btnLoadSample'),
+            btnProcess: document.getElementById('btnProcess'),
+            inpThreshold: document.getElementById('inpThreshold'),
+            inpPartNum: document.getElementById('inpPartNum'),
+            inpSerialNum: document.getElementById('inpSerialNum'),
+            welcomeScreen: document.getElementById('welcomeScreen'),
+            cardOverview: document.getElementById('cardOverview'),
+            cardSteps: document.getElementById('cardSteps'),
+            cardBB: document.getElementById('cardBB'),
+            cardDimensions: document.getElementById('cardDimensions'),
+            summaryPanel: document.getElementById('summaryPanel'),
+            statTotalPoints: document.getElementById('statTotalPoints'),
+            statApertures: document.getElementById('statApertures'),
+            selDimMode: document.getElementById('selDimMode'),
+            selPointA: document.getElementById('selPointA'),
+            selPointB: document.getElementById('selPointB'),
+            selMetricType: document.getElementById('selMetricType'),
+            btnAddDimension: document.getElementById('btnAddDimension'),
+            dynamicChartsContainer: document.getElementById('dynamicChartsContainer'),
+            emptyDimensionMsg: document.getElementById('emptyDimensionMsg'),
+            btnEqualAxes: document.getElementById('btnEqualAxes'),
+            btnDownloadPDF: document.getElementById('btnDownloadPDF'),
+            exportPanel: document.getElementById('exportPanel'),
+            chkShowLabels: document.getElementById('chkShowLabels'),
+            chkHighlightTol: document.getElementById('chkHighlightTol'),
+            inpMarkerColor: document.getElementById('inpMarkerColor'),
+            inpCentroidColor: document.getElementById('inpCentroidColor'),
+            inpMarkerSize: document.getElementById('inpMarkerSize'),
+            inpCentroidSize: document.getElementById('inpCentroidSize')
+        };
+
+        UI.fileInput.addEventListener('change', handleFileUpload);
+        UI.btnLoadSample.addEventListener('click', generateSampleData);
+        UI.btnProcess.addEventListener('click', processData);
+        UI.selDimMode.addEventListener('change', toggleDimMode);
+        UI.btnAddDimension.addEventListener('click', addDimensionChart);
+        UI.btnEqualAxes.addEventListener('click', toggleEqualAxes);
+        UI.btnDownloadPDF.addEventListener('click', downloadPDFReport);
+
+        let isEqualAxes = false;
+
+        function toggleEqualAxes() {
+            isEqualAxes = !isEqualAxes;
+            if (isEqualAxes) {
+                UI.btnEqualAxes.classList.replace('bg-slate-200', 'bg-blue-100');
+                UI.btnEqualAxes.classList.replace('text-slate-700', 'text-blue-700');
+            } else {
+                UI.btnEqualAxes.classList.replace('bg-blue-100', 'bg-slate-200');
+                UI.btnEqualAxes.classList.replace('text-blue-700', 'text-slate-700');
+            }
+            renderOverviewPlot();
+        }
+
+        function toggleDimMode() {
+            const mode = UI.selDimMode.value;
+            const ptA = document.getElementById('dimPointA_container');
+            const ptB = document.getElementById('dimPointB_container');
+            if (mode === 'internal') {
+                ptA.style.display = 'block';
+                ptB.style.display = 'block';
+            } else {
+                ptA.style.display = 'none';
+                ptB.style.display = 'none';
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseRawText(text);
+                UI.btnProcess.classList.add('animate-pulse');
+                setTimeout(() => UI.btnProcess.classList.remove('animate-pulse'), 1500);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseRawText(text) {
+            const lines = text.trim().split('\n');
+            State.rawPoints = [];
+            
+            for (let line of lines) {
+                const parts = line.trim().split(/[\s,;]+/);
+                if (parts.length >= 3) {
+                    const x = parseFloat(parts[0]);
+                    const y = parseFloat(parts[1]);
+                    const z = parseFloat(parts[2]);
+                    if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
+                        State.rawPoints.push({ x, y, z });
+                    }
+                }
+            }
+            alert(`Successfully loaded ${State.rawPoints.length} valid XYZ points.`);
+        }
+
+        function generateSampleData() {
+            const gridRows = 4;
+            const gridCols = 4;
+            const pitchX = 20; 
+            const pitchY = 15; 
+            const staggerX = 10; 
+            
+            const baseShape = [
+                {x: 0, y: 0, z: 0},
+                {x: 10, y: 0, z: 0},
+                {x: 10, y: 5, z: 0},
+                {x: 0, y: 5, z: 0}
+            ];
+
+            let textData = "";
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    const rowOffset = (row % 2 !== 0) ? staggerX : 0;
+                    const offsetX = (col * pitchX) + rowOffset;
+                    const offsetY = row * pitchY;
+                    
+                    const numPoints = Math.floor(Math.random() * 2) + 3;
+                    const currentShape = baseShape.slice(0, numPoints);
+                    
+                    for (let pt of currentShape) {
+                        const noiseX = (Math.random() - 0.5) * 0.2;
+                        const noiseY = (Math.random() - 0.5) * 0.2;
+                        const noiseZ = (Math.random() - 0.5) * 0.05;
+
+                        const outlierMultiplier = (col === 2 && row === 1) ? 2.5 : 1;
+                        const px = offsetX + pt.x + (noiseX * outlierMultiplier);
+                        const py = offsetY + pt.y + (noiseY * outlierMultiplier);
+                        const pz = pt.z + noiseZ;
+
+                        textData += `${px.toFixed(4)}, ${py.toFixed(4)}, ${pz.toFixed(4)}\n`;
+                    }
+                }
+            }
+
+            parseRawText(textData);
+            processData(); 
+        }
+
+        function processData() {
+            if (State.rawPoints.length === 0) {
+                alert("Please load a data file or sample data first.");
+                return;
+            }
+
+            let distances = [];
+            for (let i = 0; i < State.rawPoints.length - 1; i++) {
+                const p1 = State.rawPoints[i];
+                const p2 = State.rawPoints[i+1];
+                distances.push(Math.sqrt((p2.x-p1.x)**2 + (p2.y-p1.y)**2 + (p2.z-p1.z)**2));
+            }
+
+            let threshold = parseFloat(UI.inpThreshold.value);
+
+            if (isNaN(threshold) || threshold <= 0) {
+                let sortedDist = [...distances].sort((a,b) => a - b);
+                let lowerHalf = sortedDist.slice(0, Math.max(1, Math.floor(sortedDist.length / 2)));
+                let baselineDist = lowerHalf[Math.floor(lowerHalf.length / 2)] || 0.0001;
+                if (baselineDist < 1e-5) baselineDist = 1e-5; 
+                
+                threshold = sortedDist.length > 0 ? sortedDist[0] + 1 : 1; 
+                
+                for (let i = 0; i < sortedDist.length - 1; i++) {
+                    let val1 = sortedDist[i];
+                    let val2 = sortedDist[i+1];
+                    let gap = val2 - val1;
+                    if (gap > baselineDist * 2 && val2 > val1 * 1.5) {
+                        threshold = (val1 + val2) / 2;
+                        break; 
+                    }
+                }
+                UI.inpThreshold.placeholder = `Auto (${threshold.toFixed(3)})`;
+            }
+
+            State.apertures = [];
+            let currentAp = [State.rawPoints[0]];
+            for (let i = 0; i < distances.length; i++) {
+                if (distances[i] > threshold) {
+                    State.apertures.push(currentAp);
+                    currentAp = [];
+                }
+                currentAp.push(State.rawPoints[i+1]);
+            }
+            if (currentAp.length > 0) State.apertures.push(currentAp);
+            if (State.apertures.length === 0) return;
+
+            State.centroids = [];
+            State.apertures.forEach(aperture => {
+                let sumX = 0, sumY = 0, sumZ = 0;
+                aperture.forEach(pt => { sumX += pt.x; sumY += pt.y; sumZ += pt.z; });
+                State.centroids.push({ x: sumX / aperture.length, y: sumY / aperture.length, z: sumZ / aperture.length });
+            });
+
+            let allNearest = [];
+            for (let i = 0; i < State.centroids.length; i++) {
+                let minDist = Infinity;
+                let best = null;
+                for (let j = 0; j < State.centroids.length; j++) {
+                    if (i === j) continue;
+                    let dx = Math.abs(State.centroids[j].x - State.centroids[i].x);
+                    let dy = Math.abs(State.centroids[j].y - State.centroids[i].y);
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        best = {dx, dy};
+                    }
+                }
+                if (best) allNearest.push(best);
+            }
+            
+            let refStep = {dx: 0, dy: 0};
+            if (allNearest.length > 0) {
+                allNearest.sort((a,b) => a.dx - b.dx);
+                refStep.dx = allNearest[Math.floor(allNearest.length / 2)].dx;
+                allNearest.sort((a,b) => a.dy - b.dy);
+                refStep.dy = allNearest[Math.floor(allNearest.length / 2)].dy;
+            }
+            State.refStep = refStep;
+
+            State.xSteps = [];
+            State.ySteps = [];
+            State.angles = [];
+            State.targetNeighbors = [];
+
+            for (let i = 0; i < State.centroids.length; i++) {
+                let bestNeighbor = null;
+                let minDiff = Infinity;
+                
+                for (let j = 0; j < State.centroids.length; j++) {
+                    if (i === j) continue;
+                    let dx = Math.abs(State.centroids[j].x - State.centroids[i].x);
+                    let dy = Math.abs(State.centroids[j].y - State.centroids[i].y);
+                    
+                    let diff = Math.sqrt(Math.pow(dx - refStep.dx, 2) + Math.pow(dy - refStep.dy, 2));
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        bestNeighbor = {dx, dy, index: j};
+                    }
+                }
+                
+                if (bestNeighbor) {
+                    State.xSteps.push(bestNeighbor.dx);
+                    State.ySteps.push(bestNeighbor.dy);
+                    State.angles.push(Math.atan2(bestNeighbor.dy, bestNeighbor.dx) * (180 / Math.PI));
+                    State.targetNeighbors.push(bestNeighbor.index);
+                } else {
+                    State.xSteps.push(null);
+                    State.ySteps.push(null);
+                    State.angles.push(null);
+                    State.targetNeighbors.push(null);
+                }
+            }
+
+            State.bbWidths = [];
+            State.bbHeights = [];
+            State.apertures.forEach(aperture => {
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                for (let pt of aperture) {
+                    if (pt.x < minX) minX = pt.x;
+                    if (pt.x > maxX) maxX = pt.x;
+                    if (pt.y < minY) minY = pt.y;
+                    if (pt.y > maxY) maxY = pt.y;
+                }
+                State.bbWidths.push(maxX - minX);
+                State.bbHeights.push(maxY - minY);
+            });
+
+            updateUIAfterProcessing();
+            renderOverviewPlot();
+            renderStepPlots();
+            renderBBPlots();
+        }
+
+        function updateUIAfterProcessing() {
+            UI.welcomeScreen.classList.add('hidden');
+            UI.summaryPanel.classList.remove('hidden');
+            UI.exportPanel.classList.remove('hidden');
+            UI.cardOverview.classList.remove('hidden');
+            UI.cardSteps.classList.remove('hidden');
+            UI.cardBB.classList.remove('hidden');
+            UI.cardDimensions.classList.remove('hidden');
+
+            UI.statTotalPoints.innerText = State.rawPoints.length;
+            UI.statApertures.innerText = State.apertures.length;
+
+            let maxPts = 0;
+            State.apertures.forEach(ap => { if (ap.length > maxPts) maxPts = ap.length; });
+
+            UI.selPointA.innerHTML = '';
+            UI.selPointB.innerHTML = '';
+            for (let i = 0; i < maxPts; i++) {
+                UI.selPointA.add(new Option(`Pt ${i}`, i));
+                UI.selPointB.add(new Option(`Pt ${i}`, i));
+            }
+            if (maxPts > 1) UI.selPointB.selectedIndex = 1;
+            
+            UI.selDimMode.value = 'internal';
+            toggleDimMode();
+
+            UI.dynamicChartsContainer.innerHTML = '';
+            UI.dynamicChartsContainer.appendChild(UI.emptyDimensionMsg);
+            UI.emptyDimensionMsg.classList.remove('hidden');
+            State.dimensionCharts = 0;
+            State.customDims = {};
+        }
+
+        function getFilteredData(dataArr, minId, maxId) {
+            const minStr = document.getElementById(minId)?.value;
+            const maxStr = document.getElementById(maxId)?.value;
+            const min = minStr ? parseFloat(minStr) : -Infinity;
+            const max = maxStr ? parseFloat(maxStr) : Infinity;
+            return dataArr.map(v => (v !== null && v >= min && v <= max) ? v : null);
+        }
+
+        function getToleranceShapes(nomVal, tolVal) {
+            const shapes = [];
+            if (!isNaN(nomVal)) {
+                shapes.push({
+                    type: 'line', y0: nomVal, y1: nomVal,
+                    x0: 0, x1: 1, xref: 'paper', yref: 'y',
+                    line: { color: '#22c55e', width: 2, dash: 'dot' } 
+                });
+                if (!isNaN(tolVal) && tolVal > 0) {
+                    shapes.push({
+                        type: 'rect', y0: nomVal - tolVal, y1: nomVal + tolVal,
+                        x0: 0, x1: 1, xref: 'paper', yref: 'y',
+                        fillcolor: '#22c55e', opacity: 0.15, line: { width: 0 },
+                        layer: 'below' 
+                    });
+                }
+            }
+            return shapes;
+        }
+
+        function calcAvg(dataArr) {
+            const valid = dataArr.filter(d => d !== null && d !== undefined);
+            return valid.length ? valid.reduce((a, b) => a + b, 0) / valid.length : 0;
+        }
+
+        function getAvgTrace(xLabels, avgVal) {
+            const xStart = xLabels.length > 0 ? xLabels[0] : 0;
+            const xEnd = xLabels.length > 0 ? xLabels[xLabels.length - 1] : 1;
+            return {
+                x: [xStart, xEnd], y: [avgVal, avgVal],
+                type: 'scatter', mode: 'lines',
+                line: { color: '#94a3b8', dash: 'dash', width: 2 },
+                name: 'Average', hoverinfo: 'skip'
+            };
+        }
+
+        function applyScale(plotId, minId, maxId) {
+            const min = parseFloat(document.getElementById(minId).value);
+            const max = parseFloat(document.getElementById(maxId).value);
+            let update = {};
+            if (!isNaN(min) && !isNaN(max)) {
+                update['yaxis.range'] = [min, max];
+                update['yaxis.autorange'] = false;
+            } else {
+                update['yaxis.autorange'] = true;
+            }
+            Plotly.relayout(plotId, update);
+        }
+
+        function applyTolerances(plotId, nomInputId, tolInputId) {
+            const nomVal = parseFloat(document.getElementById(nomInputId).value);
+            const tolVal = parseFloat(document.getElementById(tolInputId).value);
+            Plotly.relayout(plotId, { shapes: getToleranceShapes(nomVal, tolVal) });
+        }
+
+        function evaluateTolerances() {
+            State.outOfTolApertures.clear();
+            
+            const checkTol = (val, nomId, tolId, apIndex) => {
+                if (val === null || val === undefined) return;
+                const nomEl = document.getElementById(nomId);
+                const tolEl = document.getElementById(tolId);
+                if (!nomEl || !tolEl) return;
+                
+                const nom = parseFloat(nomEl.value);
+                const tol = parseFloat(tolEl.value);
+                
+                if (!isNaN(nom) && !isNaN(tol) && tol > 0) {
+                    if (Math.abs(val - nom) > tol) {
+                        State.outOfTolApertures.add(apIndex);
+                    }
+                }
+            };
+
+            const xFilt = getFilteredData(State.xSteps, 'fMinStepX', 'fMaxStepX');
+            const yFilt = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
+            const angFilt = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
+            const wFilt = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
+            const hFilt = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
+
+            for (let i = 0; i < State.apertures.length; i++) {
+                checkTol(xFilt[i], 'inpNomStepX', 'inpTolStepX', i);
+                checkTol(yFilt[i], 'inpNomStepY', 'inpTolStepY', i);
+                checkTol(angFilt[i], 'inpNomAngle', 'inpTolAngle', i);
+                checkTol(wFilt[i], 'inpNomBBX', 'inpTolBBX', i);
+                checkTol(hFilt[i], 'inpNomBBY', 'inpTolBBY', i);
+                
+                for (const chartId in State.customDims) {
+                    const idx = chartId.split('_')[1];
+                    const dimFilt = getFilteredData(State.customDims[chartId].values, `fMinDim_${idx}`, `fMaxDim_${idx}`);
+                    checkTol(dimFilt[i], `nomDim_${idx}`, `tolDim_${idx}`, i);
+                }
+            }
+        }
+
+        function set3DView(view) {
+            State.overviewView = view;
+            renderOverviewPlot();
+        }
+
+        function update3DOverview() {
+            if (State.rawPoints.length === 0) return;
+            evaluateTolerances();
+            renderOverviewPlot();
+        }
+
+        function renderOverviewPlot() {
+            let plotX = [], plotY = [], plotZ = [], plotText = [], plotColors = [], plotTextArr = [];
+            const baseColor = UI.inpMarkerColor.value || '#3b82f6';
+            const failColor = '#ef4444';
+            const centroidColor = UI.inpCentroidColor.value || '#ef4444';
+            const highlightFailures = UI.chkHighlightTol.checked;
+            const showLabels = UI.chkShowLabels.checked;
+            const markerSize = parseInt(UI.inpMarkerSize.value) || 2;
+            const centroidSize = parseInt(UI.inpCentroidSize.value) || 2;
+            const view = State.overviewView || 'iso';
+            const is2D = view !== 'iso';
+
+            State.apertures.forEach((ap, apIdx) => {
+                const isFailing = highlightFailures && State.outOfTolApertures.has(apIdx);
+                const color = isFailing ? failColor : baseColor;
+                ap.forEach((pt, ptIdx) => {
+                    plotX.push(pt.x); plotY.push(pt.y); plotZ.push(pt.z);
+                    plotText.push(`Aperture: ${apIdx}<br>Point: ${ptIdx}`);
+                    plotColors.push(color);
+                    plotTextArr.push((showLabels && ptIdx === 0) ? `${apIdx}` : '');
+                });
+            });
+
+            let tracePoints = {};
+            let traceCentroids = {};
+            let layout = {
+                legend: { x: 0, y: 1 }, 
+                paper_bgcolor: '#ffffff', 
+                plot_bgcolor: '#ffffff'
+            };
+
+            if (is2D) {
+                let px = [], py = [], cx = [], cy = [];
+                let xTitle, yTitle;
+                if (view === 'xy') {
+                    px = plotX; py = plotY;
+                    cx = State.centroids.map(p => p.x); cy = State.centroids.map(p => p.y);
+                    xTitle = 'X'; yTitle = 'Y';
+                } else if (view === 'xz') {
+                    px = plotX; py = plotZ;
+                    cx = State.centroids.map(p => p.x); cy = State.centroids.map(p => p.z);
+                    xTitle = 'X'; yTitle = 'Z';
+                } else if (view === 'yz') {
+                    px = plotY; py = plotZ;
+                    cx = State.centroids.map(p => p.y); cy = State.centroids.map(p => p.z);
+                    xTitle = 'Y'; yTitle = 'Z';
+                }
+
+                tracePoints = {
+                    x: px, y: py, text: plotTextArr, hovertext: plotText,
+                    textposition: 'top center', mode: showLabels ? 'markers+text' : 'markers',
+                    textfont: { size: 12, color: '#334155' },
+                    hovertemplate: `<b>%{hovertext}</b><br>${xTitle}: %{x:.4f}<br>${yTitle}: %{y:.4f}<extra></extra>`,
+                    marker: { size: markerSize * 2, color: plotColors, opacity: 0.8 },
+                    type: 'scatter', name: 'Measurement Points'
+                };
+
+                traceCentroids = {
+                    x: cx, y: cy,
+                    text: State.centroids.map((_, i) => `Aperture: ${i}<br>Centroid`),
+                    hovertemplate: `<b>%{text}</b><br>${xTitle}: %{x:.4f}<br>${yTitle}: %{y:.4f}<extra></extra>`,
+                    mode: 'markers', marker: { size: centroidSize * 2, color: centroidColor, symbol: 'diamond' },
+                    type: 'scatter', name: 'Aperture Centroids'
+                };
+
+                layout.margin = { l: 40, r: 20, b: 40, t: 20 };
+                layout.xaxis = { title: xTitle };
+                layout.yaxis = { title: yTitle };
+                
+                if (isEqualAxes) {
+                    layout.yaxis.scaleanchor = "x";
+                    layout.yaxis.scaleratio = 1;
+                }
+            } else {
+                tracePoints = {
+                    x: plotX, y: plotY, z: plotZ, text: plotTextArr, hovertext: plotText,
+                    textposition: 'top center', mode: showLabels ? 'markers+text' : 'markers',
+                    textfont: { size: 12, color: '#334155' },
+                    hovertemplate: '<b>%{hovertext}</b><br>X: %{x:.4f}<br>Y: %{y:.4f}<br>Z: %{z:.4f}<extra></extra>',
+                    marker: { size: markerSize, color: plotColors, opacity: 0.8 },
+                    type: 'scatter3d', name: 'Measurement Points'
+                };
+
+                traceCentroids = {
+                    x: State.centroids.map(p => p.x), y: State.centroids.map(p => p.y), z: State.centroids.map(p => p.z),
+                    text: State.centroids.map((_, i) => `Aperture: ${i}<br>Centroid`),
+                    hovertemplate: '<b>%{text}</b><br>X: %{x:.4f}<br>Y: %{y:.4f}<br>Z: %{z:.4f}<extra></extra>',
+                    mode: 'markers', marker: { size: centroidSize, color: centroidColor, symbol: 'diamond' },
+                    type: 'scatter3d', name: 'Aperture Centroids'
+                };
+
+                layout.margin = { l: 0, r: 0, b: 0, t: 0 };
+                layout.scene = { 
+                    xaxis: { title: 'X' }, yaxis: { title: 'Y' }, zaxis: { title: 'Z' },
+                    aspectmode: isEqualAxes ? 'data' : 'auto'
+                };
+            }
+
+            Plotly.react('plotOverview', [tracePoints, traceCentroids], layout, {responsive: true});
+        }
+
+        function renderStepPlots() {
+            const xLabels = State.targetNeighbors.map((val, i) => val !== null ? `${i}→${val}` : `${i}`);
+            
+            const xData = getFilteredData(State.xSteps, 'fMinStepX', 'fMaxStepX');
+            const yData = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
+            const angleData = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
+
+            const avgX = calcAvg(xData);
+            const avgY = calcAvg(yData);
+            const avgAngle = calcAvg(angleData);
+
+            document.getElementById('avgStepX').innerText = `Avg: ${avgX.toFixed(4)}`;
+            document.getElementById('avgStepY').innerText = `Avg: ${avgY.toFixed(4)}`;
+            document.getElementById('avgAngle').innerText = `Avg: ${avgAngle.toFixed(4)}`;
+
+            const hoverTxt = State.targetNeighbors.map((val, i) => val !== null ? `Ap ${i} → Ap ${val}` : '');
+
+            const layoutBase = {
+                margin: { l: 50, r: 20, b: 70, t: 20 },
+                xaxis: { title: 'Aperture Target Index', tickangle: 45, type: 'category' },
+                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc',
+                showlegend: false
+            };
+
+            Plotly.react('plotStepX', [
+                {
+                    x: xLabels, y: xData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
+                    hovertemplate: '<b>%{text}</b><br>X-Lattice: <b>%{y:.4f}</b><extra></extra>',
+                    line: { color: '#8b5cf6' }, marker: { size: 6 }, connectgaps: false, name: 'X-Lattice'
+                },
+                getAvgTrace(xLabels, avgX)
+            ], {
+                ...layoutBase, yaxis: { title: '[mm]' },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTolStepX').value))
+            }, {responsive: true});
+
+            Plotly.react('plotStepY', [
+                {
+                    x: xLabels, y: yData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
+                    hovertemplate: '<b>%{text}</b><br>Y-Lattice: <b>%{y:.4f}</b><extra></extra>',
+                    line: { color: '#10b981' }, marker: { size: 6 }, connectgaps: false, name: 'Y-Lattice'
+                },
+                getAvgTrace(xLabels, avgY)
+            ], {
+                ...layoutBase, yaxis: { title: '[mm]' },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTolStepY').value))
+            }, {responsive: true});
+
+            Plotly.react('plotAngle', [
+                {
+                    x: xLabels, y: angleData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
+                    hovertemplate: '<b>%{text}</b><br>Angle: <b>%{y:.3f}°</b><extra></extra>',
+                    line: { color: '#f59e0b' }, marker: { size: 6 }, connectgaps: false, name: 'Lattice Angle'
+                },
+                getAvgTrace(xLabels, avgAngle)
+            ], {
+                ...layoutBase, yaxis: { title: 'Angle [deg]' },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTolAngle').value))
+            }, {responsive: true});
+
+            update3DOverview();
+        }
+
+        function renderBBPlots() {
+            const xLabels = Array.from({length: State.bbWidths.length}, (_, i) => String(i));
+            const wData = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
+            const hData = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
+
+            const avgW = calcAvg(wData);
+            const avgH = calcAvg(hData);
+
+            document.getElementById('avgBBX').innerText = `Avg: ${avgW.toFixed(4)}`;
+            document.getElementById('avgBBY').innerText = `Avg: ${avgH.toFixed(4)}`;
+
+            const layoutBase = {
+                margin: { l: 50, r: 20, b: 70, t: 20 },
+                xaxis: { title: 'Aperture Index', tickangle: 45, type: 'category' },
+                yaxis: { title: '[mm]' },
+                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc',
+                showlegend: false
+            };
+
+            Plotly.react('plotBBX', [
+                {
+                    x: xLabels, y: wData, type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#0ea5e9' }, marker: { size: 6 }, connectgaps: false, name: 'Width'
+                },
+                getAvgTrace(xLabels, avgW)
+            ], {
+                ...layoutBase,
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBX').value), parseFloat(document.getElementById('inpTolBBX').value))
+            }, {responsive: true});
+
+            Plotly.react('plotBBY', [
+                {
+                    x: xLabels, y: hData, type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#ec4899' }, marker: { size: 6 }, connectgaps: false, name: 'Height'
+                },
+                getAvgTrace(xLabels, avgH)
+            ], {
+                ...layoutBase,
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTolBBY').value))
+            }, {responsive: true});
+            
+            update3DOverview();
+        }
+
+        function renderCustomDimChart(idx) {
+            const chartDivId = `dimChart_${idx}`;
+            const chartData = State.customDims[chartDivId];
+            if (!chartData) return;
+
+            const dimensionsRaw = chartData.values;
+            const xLabels = chartData.labels;
+
+            const filteredDims = getFilteredData(dimensionsRaw, `fMinDim_${idx}`, `fMaxDim_${idx}`);
+            const avg = calcAvg(filteredDims);
+
+            document.getElementById(`avgDim_${idx}`).innerText = `Avg: ${avg.toFixed(4)}`;
+
+            Plotly.react(chartDivId, [
+                {
+                    x: xLabels, y: filteredDims, type: 'scatter', mode: 'lines+markers',
+                    line: { color: '#f59e0b' }, marker: { size: 5 }, name: 'Measurement', connectgaps: false
+                },
+                getAvgTrace(xLabels, avg)
+            ], {
+                margin: { l: 50, r: 20, b: 70, t: 10 },
+                xaxis: { title: 'Index Map', tickangle: 45, type: 'category' },
+                yaxis: { title: 'Dimension Value', tickformat: '.1f' },
+                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc', showlegend: false,
+                shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tolDim_${idx}`).value))
+            }, {responsive: true});
+
+            update3DOverview();
+        }
+
+        function addDimensionChart() {
+            const mode = UI.selDimMode.value;
+            const metric = UI.selMetricType.value;
+            const metricName = UI.selMetricType.options[UI.selMetricType.selectedIndex].text;
+
+            let title = "";
+            let dimensions = [];
+            let chartLabels = [];
+
+            if (mode === 'internal') {
+                const idxA = parseInt(UI.selPointA.value, 10);
+                const idxB = parseInt(UI.selPointB.value, 10);
+                if (idxA === idxB) { alert("Please select two distinct points."); return; }
+                
+                title = `Dimension: Pt ${idxA} to Pt ${idxB} (${metricName})`;
+                UI.emptyDimensionMsg.classList.add('hidden');
+
+                dimensions = State.apertures.map((ap, index) => {
+                    chartLabels.push(String(index));
+                    const p1 = ap[idxA]; const p2 = ap[idxB];
+                    if (!p1 || !p2) return null;
+                    if (metric === 'euclidean') return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2));
+                    else if (metric === 'dx') return Math.abs(p2.x - p1.x);
+                    else if (metric === 'dy') return Math.abs(p2.y - p1.y);
+                    return null;
+                });
+            } else {
+                const n = parseInt(mode.split('_')[1]); 
+                const rankName = n === 1 ? '1st' : (n === 2 ? '2nd' : '3rd');
+                title = `Inter-Aperture: ${rankName} Closest (${metricName})`;
+                UI.emptyDimensionMsg.classList.add('hidden');
+
+                let expectedDx = State.refStep.dx * n;
+                let expectedDy = State.refStep.dy * n;
+                let expectedDist = Math.sqrt(expectedDx*expectedDx + expectedDy*expectedDy);
+
+                dimensions = State.centroids.map((ci, i) => {
+                    let bestNeighbor = null;
+                    let minDiff = Infinity;
+                    
+                    for (let j = 0; j < State.centroids.length; j++) {
+                        if (i === j) continue;
+                        let dx = Math.abs(State.centroids[j].x - ci.x);
+                        let dy = Math.abs(State.centroids[j].y - ci.y);
+                        
+                        let diff = Math.sqrt(Math.pow(dx - expectedDx, 2) + Math.pow(dy - expectedDy, 2));
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestNeighbor = { index: j, pt: State.centroids[j] };
+                        }
+                    }
+
+                    if (bestNeighbor && minDiff < (expectedDist * 0.4)) {
+                        chartLabels.push(`${i}→${bestNeighbor.index}`);
+                        let p1 = ci; let p2 = bestNeighbor.pt;
+                        if (metric === 'euclidean') return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2));
+                        else if (metric === 'dx') return Math.abs(p2.x - p1.x);
+                        else if (metric === 'dy') return Math.abs(p2.y - p1.y);
+                        return null;
+                    } else {
+                        chartLabels.push(String(i));
+                        return null;
+                    }
+                });
+            }
+
+            State.dimensionCharts++;
+            const idx = State.dimensionCharts;
+            const chartDivId = `dimChart_${idx}`;
+            State.customDims[chartDivId] = { values: dimensions, labels: chartLabels };
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'border border-slate-200 rounded-md p-4 bg-white relative chart-controls flex flex-col';
+            wrapper.innerHTML = `
+                <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors px-2 py-1 z-10" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="flex flex-col xl:flex-row xl:justify-between items-start mb-4 pr-8 gap-3">
+                    <div class="flex-1 break-words">
+                        <h4 class="font-medium text-slate-700 text-sm">${title}</h4>
+                        <p class="text-xs text-slate-500 font-medium" id="avgDim_${idx}">Avg: 0.0000</p>
+                    </div>
+                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
+                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                                <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
+                                <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Scale</span>
+                                <input type="number" id="minDim_${idx}" placeholder="Min" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                                <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1">
+                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
+                                <input type="number" id="nomDim_${idx}" placeholder="Nominal" step="any" oninput="renderCustomDimChart(${idx})">
+                                <span class="text-xs text-slate-400">&plusmn;</span>
+                                <input type="number" id="tolDim_${idx}" placeholder="Tol" step="any" oninput="renderCustomDimChart(${idx})">
+                            </div>
+                            <div class="border-l border-slate-300 pl-2">
+                                <button onclick="downloadPlot('${chartDivId}', '${title.replace(/[^a-zA-Z0-9 ()]/g, '_')}')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="${chartDivId}" class="w-full flex-1 min-h-[250px]"></div>
+            `;
+            UI.dynamicChartsContainer.appendChild(wrapper);
+            renderCustomDimChart(idx);
+        }
+
+        function deleteCustomChart(chartId, element) {
+            delete State.customDims[chartId];
+            element.remove();
+            if (UI.dynamicChartsContainer.querySelectorAll('.border').length === 0) UI.emptyDimensionMsg.classList.remove('hidden');
+            update3DOverview();
+        }
+
+        async function downloadPlot(plotId, chartTitle) {
+            const partNum = UI.inpPartNum.value || "Unknown_Part";
+            const serialNum = UI.inpSerialNum.value || "No_SN";
+            const el = document.getElementById(plotId);
+            
+            if (!el || !el.layout) return;
+
+            const origTitle = el.layout.title;
+            const origMargin = el.layout.margin;
+
+            // Temporarily apply layout changes to include title and axes in the image
+            await Plotly.relayout(plotId, { 
+                'title.text': chartTitle,
+                'title.font.size': 18,
+                margin: { l: 60, r: 40, b: 80, t: 60 } // Extra margin space to prevent clipping of titles/axes
+            });
+
+            const safeFilename = `${partNum}_${serialNum}_${chartTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            
+            await Plotly.downloadImage(plotId, { format: 'png', width: 1200, height: 800, filename: safeFilename });
+
+            // Restore the layout seamlessly
+            await Plotly.relayout(plotId, { 
+                title: origTitle,
+                margin: origMargin
+            });
+        }
+
+        async function downloadPDFReport() {
+            if (!window.jspdf) {
+                alert("PDF library is still loading. Please try again in a moment.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            
+            const originalBtnHTML = UI.btnDownloadPDF.innerHTML;
+            UI.btnDownloadPDF.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+            UI.btnDownloadPDF.disabled = true;
+
+            try {
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const margin = 15;
+                const printWidth = pageWidth - (margin * 2);
+                let cursorY = margin;
+
+                doc.setFontSize(18);
+                doc.setFont("helvetica", "bold");
+                doc.text("Aperture Tolerance Report", margin, cursorY);
+                cursorY += 8;
+
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "normal");
+                doc.text(`Part Number: ${document.getElementById('inpPartNum').value || "N/A"}`, margin, cursorY);
+                cursorY += 6;
+                doc.text(`Serial Number: ${document.getElementById('inpSerialNum').value || "N/A"}`, margin, cursorY);
+                cursorY += 6;
+                
+                const comments = document.getElementById('inpComments')?.value;
+                if (comments) {
+                    const splitComments = doc.splitTextToSize(`Comments: ${comments}`, printWidth);
+                    doc.text(splitComments, margin, cursorY);
+                    cursorY += (6 * splitComments.length);
+                }
+
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, margin, cursorY);
+                cursorY += 10;
+
+                const plotsToExport = [
+                    { id: 'plotOverview', title: '3D Array Overview', h: printWidth },
+                    { id: 'plotStepX', title: 'X-Lattice', h: 60 },
+                    { id: 'plotStepY', title: 'Y-Lattice', h: 60 },
+                    { id: 'plotAngle', title: 'Lattice Angle', h: 60 },
+                    { id: 'plotBBX', title: 'Aperture Widths', h: 60 },
+                    { id: 'plotBBY', title: 'Aperture Heights', h: 60 }
+                ];
+                
+                for(let i=1; i<=State.dimensionCharts; i++){
+                    const chartDivId = `dimChart_${i}`;
+                    const chartEl = document.getElementById(chartDivId);
+                    if (chartEl) {
+                        const titleNode = chartEl.parentElement.querySelector('h4');
+                        const realTitle = titleNode ? titleNode.innerText : `Custom Dimension ${i}`;
+                        plotsToExport.push({ id: chartDivId, title: realTitle, h: 60 });
+                    }
+                }
+
+                for (const p of plotsToExport) {
+                    const plotEl = document.getElementById(p.id);
+                    if (!plotEl) continue;
+                    
+                    const origMargin = plotEl.layout.margin || { l: 50, r: 20, b: 70, t: 20 };
+                    const origTop = origMargin.t !== undefined ? origMargin.t : 20;
+                    
+                    await Plotly.relayout(plotEl, { margin: { l: 50, r: 20, b: 90, t: origTop } });
+                    
+                    const pxWidth = 1200; 
+                    const pxHeight = Math.round((p.h / printWidth) * pxWidth);
+                    
+                    const imgUrl = await Plotly.toImage(plotEl, { format: 'jpeg', width: pxWidth, height: pxHeight });
+                    
+                    await Plotly.relayout(plotEl, { margin: origMargin });
+                    
+                    if (cursorY + p.h + 20 > doc.internal.pageSize.getHeight() - margin) {
+                        doc.addPage();
+                        cursorY = margin;
+                    }
+                    
+                    doc.setFontSize(14);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(p.title, margin, cursorY);
+                    cursorY += 8; 
+                    
+                    doc.addImage(imgUrl, 'JPEG', margin, cursorY, printWidth, p.h);
+                    cursorY += p.h + 15; 
+                }
+
+                const fnPart = document.getElementById('inpPartNum').value ? document.getElementById('inpPartNum').value + '_' : '';
+                const fnSerial = document.getElementById('inpSerialNum').value ? document.getElementById('inpSerialNum').value + '_' : '';
+                doc.save(`${fnPart}${fnSerial}Analyzer_Report.pdf`);
+
+            } catch (err) {
+                console.error("PDF Export Error: ", err);
+                alert("An error occurred during PDF generation.");
+            } finally {
+                UI.btnDownloadPDF.innerHTML = originalBtnHTML;
+                UI.btnDownloadPDF.disabled = false;
+            }
+        }
+
+        const resizeObserver = new ResizeObserver(() => {
+            const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
+            plots.forEach(id => {
+                if (document.getElementById(id) && !UI.cardOverview.classList.contains('hidden')) {
+                    Plotly.Plots.resize(id);
+                }
+            });
+            document.querySelectorAll('[id^="dimChart_"]').forEach(chart => Plotly.Plots.resize(chart.id));
+        });
+        
+        resizeObserver.observe(document.getElementById('mainContainer'));
+
+    </script>
+</body>
+</html>
