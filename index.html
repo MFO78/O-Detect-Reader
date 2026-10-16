@@ -25,7 +25,7 @@
         .chart-controls input[type="number"] { width: 4rem; font-size: 0.75rem; padding: 0.25rem; }
     </style>
 </head>
-<body class="h-screen flex flex-col md:flex-row overflow-hidden text-slate-800">
+<body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800">
 
     <!-- Sidebar Controls -->
     <aside class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 shrink-0">
@@ -183,7 +183,7 @@
                     </div>
                 </div>
             </div>
-            <!-- Modified size class to ensure aspect square logic -->
+            <!-- Square aspect ratio overview chart -->
             <div id="plotOverview" class="w-full max-w-[900px] aspect-square mx-auto"></div>
         </div>
 
@@ -191,36 +191,29 @@
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls" id="cardSteps">
             
             <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
                     <div class="flex-1 break-words">
                         <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-left-right text-slate-400 mr-2"></i> X-Lattice</h3>
-                        <p class="text-xs text-slate-500 font-medium" id="avgStepX">Avg: --</p>
                         <p class="text-[10px] text-slate-500">Absolute X distance to the primary neighbor.</p>
                     </div>
-                    <!-- Redesigned two-line controls -->
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                                <input type="number" id="fMaxStepX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                                <input type="number" id="minStepX" placeholder="Min" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
-                                <input type="number" id="maxStepX" placeholder="Max" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                            <input type="number" id="fMaxStepX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="inpNomStepX" placeholder="Nom" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
-                                <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                <input type="number" id="inpTolStepX" placeholder="Tol" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                            <input type="number" id="minStepX" placeholder="Min" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                            <input type="number" id="maxStepX" placeholder="Max" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="inpNomStepX" placeholder="Nom" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
+                            <span class="text-[10px] text-slate-400">&plusmn;</span>
+                            <input type="number" id="inpTolStepX" placeholder="Tol" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
+                        </div>
+                        <div class="border-l border-slate-300 pl-1">
+                            <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -228,35 +221,29 @@
             </div>
             
             <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
                     <div class="flex-1 break-words">
                         <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-up-down text-slate-400 mr-2"></i> Y-Lattice</h3>
-                        <p class="text-xs text-slate-500 font-medium" id="avgStepY">Avg: --</p>
                         <p class="text-[10px] text-slate-500">Absolute Y distance to the primary neighbor.</p>
                     </div>
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                                <input type="number" id="fMaxStepY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                                <input type="number" id="minStepY" placeholder="Min" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
-                                <input type="number" id="maxStepY" placeholder="Max" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                            <input type="number" id="fMaxStepY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="inpNomStepY" placeholder="Nom" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
-                                <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                <input type="number" id="inpTolStepY" placeholder="Tol" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                            <input type="number" id="minStepY" placeholder="Min" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                            <input type="number" id="maxStepY" placeholder="Max" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="inpNomStepY" placeholder="Nom" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
+                            <span class="text-[10px] text-slate-400">&plusmn;</span>
+                            <input type="number" id="inpTolStepY" placeholder="Tol" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
+                        </div>
+                        <div class="border-l border-slate-300 pl-1">
+                            <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -264,35 +251,29 @@
             </div>
             
             <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
                     <div class="flex-1 break-words">
                         <h3 class="text-lg font-semibold"><i class="fa-solid fa-angle-right text-slate-400 mr-2"></i> Lattice Angle</h3>
-                        <p class="text-xs text-slate-500 font-medium" id="avgAngle">Avg: --</p>
                         <p class="text-[10px] text-slate-500">Vector angle of the primary step (arctan(ΔY/ΔX)).</p>
                     </div>
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                                <input type="number" id="fMaxAngle" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                                <input type="number" id="minAngle" placeholder="Min" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
-                                <input type="number" id="maxAngle" placeholder="Max" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
+                            <input type="number" id="fMaxAngle" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="inpNomAngle" placeholder="Nom" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
-                                <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                <input type="number" id="inpTolAngle" placeholder="Tol" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                            <input type="number" id="minAngle" placeholder="Min" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                            <input type="number" id="maxAngle" placeholder="Max" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="inpNomAngle" placeholder="Nom" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
+                            <span class="text-[10px] text-slate-400">&plusmn;</span>
+                            <input type="number" id="inpTolAngle" placeholder="Tol" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
+                        </div>
+                        <div class="border-l border-slate-300 pl-1">
+                            <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -304,35 +285,29 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls" id="cardBB">
             
             <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
                     <div class="flex-1 break-words">
                         <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Width</h3>
-                        <p class="text-xs text-slate-500 font-medium" id="avgBBX">Avg: --</p>
                         <p class="text-xs text-slate-500">Maximum span in the X-axis for each aperture.</p>
                     </div>
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                                <input type="number" id="fMaxBBX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                                <input type="number" id="minBBX" placeholder="Min" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
-                                <input type="number" id="maxBBX" placeholder="Max" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                            <input type="number" id="fMaxBBX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="inpNomBBX" placeholder="Nom" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
-                                <span class="text-xs text-slate-400">&plusmn;</span>
-                                <input type="number" id="inpTolBBX" placeholder="Tol" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                            <input type="number" id="minBBX" placeholder="Min" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                            <input type="number" id="maxBBX" placeholder="Max" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="inpNomBBX" placeholder="Nom" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
+                            <span class="text-xs text-slate-400">&plusmn;</span>
+                            <input type="number" id="inpTolBBX" placeholder="Tol" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
+                        </div>
+                        <div class="border-l border-slate-300 pl-2">
+                            <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -340,35 +315,29 @@
             </div>
             
             <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-4 gap-3">
+                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
                     <div class="flex-1 break-words">
                         <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Height</h3>
-                        <p class="text-xs text-slate-500 font-medium" id="avgBBY">Avg: --</p>
                         <p class="text-xs text-slate-500">Maximum span in the Y-axis for each aperture.</p>
                     </div>
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                                <input type="number" id="fMaxBBY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                                <input type="number" id="minBBY" placeholder="Min" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
-                                <input type="number" id="maxBBY" placeholder="Max" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
+                            <input type="number" id="fMaxBBY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="inpNomBBY" placeholder="Nom" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
-                                <span class="text-xs text-slate-400">&plusmn;</span>
-                                <input type="number" id="inpTolBBY" placeholder="Tol" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
+                            <input type="number" id="minBBY" placeholder="Min" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                            <input type="number" id="maxBBY" placeholder="Max" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="inpNomBBY" placeholder="Nom" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
+                            <span class="text-xs text-slate-400">&plusmn;</span>
+                            <input type="number" id="inpTolBBY" placeholder="Tol" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
+                        </div>
+                        <div class="border-l border-slate-300 pl-2">
+                            <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -383,17 +352,23 @@
                     <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-ruler-combined text-slate-400"></i> Track Notable Dimensions
                     </h3>
-                    <p class="text-xs text-slate-500 mt-1">Select a target mode to calculate specific distances across the array.</p>
+                    <p class="text-xs text-slate-500 mt-1">Select a target mode and metric to calculate specific offsets or angles across the array.</p>
                 </div>
                 
                 <div class="flex items-end gap-3 bg-slate-50 p-3 rounded-md border border-slate-200 flex-wrap shrink-0">
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Target Mode</label>
-                        <select id="selDimMode" class="w-40 text-sm p-1.5 border border-slate-300 rounded">
+                        <select id="selDimMode" class="w-56 text-sm p-1.5 border border-slate-300 rounded custom-scrollbar">
                             <option value="internal">Intra-Aperture (Pt to Pt)</option>
-                            <option value="neighbor_1">1st Closest Aperture</option>
-                            <option value="neighbor_2">2nd Closest Aperture</option>
-                            <option value="neighbor_3">3rd Closest Aperture</option>
+                            <optgroup label="Lattice Direction Neighbors">
+                                <option value="neighbor_1">1st Closest Along Lattice</option>
+                                <option value="neighbor_2">2nd Closest Along Lattice</option>
+                                <option value="neighbor_3">3rd Closest Along Lattice</option>
+                            </optgroup>
+                            <optgroup label="Position & Coordinates">
+                                <option value="absolute_pos">Absolute Position (X,Y,Z)</option>
+                                <option value="raw_points">All Points (X,Y,Z)</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div id="dimPointA_container">
@@ -406,15 +381,28 @@
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-600 mb-1">Metric</label>
-                        <select id="selMetricType" class="w-32 text-sm p-1.5 border border-slate-300 rounded">
+                        <select id="selMetricType" class="w-36 text-sm p-1.5 border border-slate-300 rounded">
+                            <option value="dx">X Distance (ΔX)</option>
+                            <option value="dy">Y Distance (ΔY)</option>
+                            <option value="angle">Lattice Angle (°)</option>
                             <option value="euclidean">Absolute Distance</option>
-                            <option value="dx">X-Lattice</option>
-                            <option value="dy">Y-Lattice</option>
                         </select>
                     </div>
                     <button id="btnAddDimension" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded font-medium transition-colors">
                         Add Chart
                     </button>
+                    <div class="flex items-center gap-1 pl-2 border-l border-slate-300">
+                        <span class="text-[10px] text-slate-500 font-semibold uppercase leading-tight mr-1">1st–3rd<br>Presets:</span>
+                        <button onclick="addNeighborPreset('dx')" class="bg-violet-600 hover:bg-violet-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor X-distance (ΔX) charts">
+                            ΔX
+                        </button>
+                        <button onclick="addNeighborPreset('dy')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Y-distance (ΔY) charts">
+                            ΔY
+                        </button>
+                        <button onclick="addNeighborPreset('angle')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Lattice Angle (°) charts">
+                            Angle
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -440,8 +428,9 @@
             dimensionCharts: 0,  
             customDims: {},
             refStep: {dx: 0, dy: 0},
+            latticeVector: {dx: 1, dy: 0},
             outOfTolApertures: new Set(),
-            overviewView: 'iso'
+            overviewView: 'iso' 
         };
 
         const UI = {
@@ -451,6 +440,7 @@
             inpThreshold: document.getElementById('inpThreshold'),
             inpPartNum: document.getElementById('inpPartNum'),
             inpSerialNum: document.getElementById('inpSerialNum'),
+            inpComments: document.getElementById('inpComments'),
             welcomeScreen: document.getElementById('welcomeScreen'),
             cardOverview: document.getElementById('cardOverview'),
             cardSteps: document.getElementById('cardSteps'),
@@ -487,6 +477,25 @@
 
         let isEqualAxes = false;
 
+        function showNotification(msg, type = 'info') {
+            let toast = document.getElementById('toastNotification');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toastNotification';
+                toast.className = 'fixed top-4 right-4 z-50 transition-all pointer-events-none flex flex-col items-end gap-2';
+                document.body.appendChild(toast);
+            }
+            const colorClass = type === 'error' ? 'bg-red-600 text-white' : type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white';
+            const el = document.createElement('div');
+            el.className = `px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold transition-all flex items-center gap-2 ${colorClass}`;
+            el.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${msg}</span>`;
+            toast.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            }, 3200);
+        }
+
         function toggleEqualAxes() {
             isEqualAxes = !isEqualAxes;
             if (isEqualAxes) {
@@ -503,12 +512,41 @@
             const mode = UI.selDimMode.value;
             const ptA = document.getElementById('dimPointA_container');
             const ptB = document.getElementById('dimPointB_container');
+            const metric = UI.selMetricType;
+            
+            const currentMetricVal = metric.value;
+            metric.innerHTML = '';
+            
             if (mode === 'internal') {
+                metric.add(new Option('X Distance (ΔX)', 'dx'));
+                metric.add(new Option('Y Distance (ΔY)', 'dy'));
+                metric.add(new Option('Absolute Distance', 'euclidean'));
+                metric.add(new Option('Vector Angle (°)', 'angle'));
                 ptA.style.display = 'block';
                 ptB.style.display = 'block';
-            } else {
+            } else if (mode.startsWith('neighbor_')) {
+                metric.add(new Option('X Distance (ΔX)', 'dx'));
+                metric.add(new Option('Y Distance (ΔY)', 'dy'));
+                metric.add(new Option('Lattice Angle (°)', 'angle'));
+                metric.add(new Option('Absolute Distance', 'euclidean'));
                 ptA.style.display = 'none';
                 ptB.style.display = 'none';
+            } else if (mode === 'absolute_pos') {
+                ptA.style.display = 'block';
+                ptB.style.display = 'none';
+                metric.add(new Option('X Coordinate', 'x'));
+                metric.add(new Option('Y Coordinate', 'y'));
+                metric.add(new Option('Z Coordinate', 'z'));
+            } else if (mode === 'raw_points') {
+                ptA.style.display = 'none';
+                ptB.style.display = 'none';
+                metric.add(new Option('X Coordinate', 'x'));
+                metric.add(new Option('Y Coordinate', 'y'));
+                metric.add(new Option('Z Coordinate', 'z'));
+            }
+            
+            if (Array.from(metric.options).some(opt => opt.value === currentMetricVal)) {
+                metric.value = currentMetricVal;
             }
         }
 
@@ -541,7 +579,7 @@
                     }
                 }
             }
-            alert(`Successfully loaded ${State.rawPoints.length} valid XYZ points.`);
+            showNotification(`Loaded ${State.rawPoints.length} valid XYZ points.`, 'success');
         }
 
         function generateSampleData() {
@@ -589,7 +627,7 @@
 
         function processData() {
             if (State.rawPoints.length === 0) {
-                alert("Please load a data file or sample data first.");
+                showNotification("Please load a data file or sample data first.", 'error');
                 return;
             }
 
@@ -701,6 +739,25 @@
                 }
             }
 
+            let stepDxList = [];
+            let stepDyList = [];
+            for (let i = 0; i < State.centroids.length; i++) {
+                if (State.targetNeighbors[i] !== null && State.targetNeighbors[i] !== undefined) {
+                    let targetIdx = State.targetNeighbors[i];
+                    stepDxList.push(State.centroids[targetIdx].x - State.centroids[i].x);
+                    stepDyList.push(State.centroids[targetIdx].y - State.centroids[i].y);
+                }
+            }
+            let latVx = refStep.dx || 1;
+            let latVy = refStep.dy || 0;
+            if (stepDxList.length > 0) {
+                stepDxList.sort((a,b) => a - b);
+                stepDyList.sort((a,b) => a - b);
+                latVx = stepDxList[Math.floor(stepDxList.length / 2)] || latVx;
+                latVy = stepDyList[Math.floor(stepDyList.length / 2)] || latVy;
+            }
+            State.latticeVector = { dx: latVx, dy: latVy };
+
             State.bbWidths = [];
             State.bbHeights = [];
             State.apertures.forEach(aperture => {
@@ -738,11 +795,13 @@
 
             UI.selPointA.innerHTML = '';
             UI.selPointB.innerHTML = '';
+            UI.selPointA.add(new Option(`Centroid`, 'centroid'));
+            UI.selPointB.add(new Option(`Centroid`, 'centroid'));
             for (let i = 0; i < maxPts; i++) {
                 UI.selPointA.add(new Option(`Pt ${i}`, i));
                 UI.selPointB.add(new Option(`Pt ${i}`, i));
             }
-            if (maxPts > 1) UI.selPointB.selectedIndex = 1;
+            if (maxPts > 1) UI.selPointB.selectedIndex = 2; 
             
             UI.selDimMode.value = 'internal';
             toggleDimMode();
@@ -922,7 +981,7 @@
                     textfont: { size: 12, color: '#334155' },
                     hovertemplate: `<b>%{hovertext}</b><br>${xTitle}: %{x:.4f}<br>${yTitle}: %{y:.4f}<extra></extra>`,
                     marker: { size: markerSize * 2, color: plotColors, opacity: 0.8 },
-                    type: 'scatter', name: 'Measurement Points'
+                    type: 'scattergl', name: 'Measurement Points'
                 };
 
                 traceCentroids = {
@@ -930,7 +989,7 @@
                     text: State.centroids.map((_, i) => `Aperture: ${i}<br>Centroid`),
                     hovertemplate: `<b>%{text}</b><br>${xTitle}: %{x:.4f}<br>${yTitle}: %{y:.4f}<extra></extra>`,
                     mode: 'markers', marker: { size: centroidSize * 2, color: centroidColor, symbol: 'diamond' },
-                    type: 'scatter', name: 'Aperture Centroids'
+                    type: 'scattergl', name: 'Aperture Centroids'
                 };
 
                 layout.margin = { l: 40, r: 20, b: 40, t: 20 };
@@ -962,7 +1021,8 @@
                 layout.margin = { l: 0, r: 0, b: 0, t: 0 };
                 layout.scene = { 
                     xaxis: { title: 'X' }, yaxis: { title: 'Y' }, zaxis: { title: 'Z' },
-                    aspectmode: isEqualAxes ? 'data' : 'auto'
+                    aspectmode: isEqualAxes ? 'data' : 'auto',
+                    camera: { eye: { x: 1.2, y: 1.2, z: 1.2 } }
                 };
             }
 
@@ -980,15 +1040,11 @@
             const avgY = calcAvg(yData);
             const avgAngle = calcAvg(angleData);
 
-            document.getElementById('avgStepX').innerText = `Avg: ${avgX.toFixed(4)}`;
-            document.getElementById('avgStepY').innerText = `Avg: ${avgY.toFixed(4)}`;
-            document.getElementById('avgAngle').innerText = `Avg: ${avgAngle.toFixed(4)}`;
-
             const hoverTxt = State.targetNeighbors.map((val, i) => val !== null ? `Ap ${i} → Ap ${val}` : '');
 
             const layoutBase = {
                 margin: { l: 50, r: 20, b: 70, t: 20 },
-                xaxis: { title: 'Aperture Target Index', tickangle: 45, type: 'category' },
+                xaxis: { title: 'Aperture Index Map', tickangle: 45, type: 'category' },
                 paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc',
                 showlegend: false
             };
@@ -1040,9 +1096,6 @@
             const avgW = calcAvg(wData);
             const avgH = calcAvg(hData);
 
-            document.getElementById('avgBBX').innerText = `Avg: ${avgW.toFixed(4)}`;
-            document.getElementById('avgBBY').innerText = `Avg: ${avgH.toFixed(4)}`;
-
             const layoutBase = {
                 margin: { l: 50, r: 20, b: 70, t: 20 },
                 xaxis: { title: 'Aperture Index', tickangle: 45, type: 'category' },
@@ -1083,22 +1136,48 @@
 
             const dimensionsRaw = chartData.values;
             const xLabels = chartData.labels;
+            const xAxisTitle = chartData.xAxisTitle || 'Aperture Index Map';
+            const metric = chartData.metric;
+            const isAngle = metric === 'angle' || chartData.title?.includes('Angle');
+            
+            let yAxisTitle = 'Dimension Value [mm]';
+            let unit = ' mm';
+            let lineColor = '#6366f1';
+            
+            if (isAngle) {
+                yAxisTitle = 'Lattice Angle [deg]';
+                unit = '°';
+                lineColor = '#f59e0b';
+            } else if (metric === 'dx') {
+                yAxisTitle = 'Delta X [mm]';
+                lineColor = '#8b5cf6';
+            } else if (metric === 'dy') {
+                yAxisTitle = 'Delta Y [mm]';
+                lineColor = '#10b981';
+            } else if (metric === 'euclidean') {
+                yAxisTitle = 'Distance [mm]';
+                lineColor = '#0ea5e9';
+            }
 
             const filteredDims = getFilteredData(dimensionsRaw, `fMinDim_${idx}`, `fMaxDim_${idx}`);
             const avg = calcAvg(filteredDims);
 
-            document.getElementById(`avgDim_${idx}`).innerText = `Avg: ${avg.toFixed(4)}`;
+            document.getElementById(`avgDim_${idx}`).innerText = `Avg: ${avg.toFixed(1)}${unit}`;
 
             Plotly.react(chartDivId, [
                 {
                     x: xLabels, y: filteredDims, type: 'scatter', mode: 'lines+markers',
-                    line: { color: '#f59e0b' }, marker: { size: 5 }, name: 'Measurement', connectgaps: false
+                    line: { color: lineColor }, marker: { size: 5 }, name: 'Measurement', connectgaps: false,
+                    hovertemplate: `<b>%{x}</b><br>${yAxisTitle}: <b>%{y:.1f}${unit}</b><extra></extra>`
                 },
-                getAvgTrace(xLabels, avg)
+                {
+                    x: [xLabels[0], xLabels[xLabels.length-1]], y: [avg, avg], type: 'scatter', mode: 'lines',
+                    line: { color: '#94a3b8', dash: 'dash', width: 2 }, name: 'Average', hoverinfo: 'skip'
+                }
             ], {
                 margin: { l: 50, r: 20, b: 70, t: 10 },
-                xaxis: { title: 'Index Map', tickangle: 45, type: 'category' },
-                yaxis: { title: 'Dimension Value', tickformat: '.1f' },
+                xaxis: { title: xAxisTitle, tickangle: 45, type: 'category' },
+                yaxis: { title: yAxisTitle, tickformat: '.1f' },
                 paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc', showlegend: false,
                 shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tolDim_${idx}`).value))
             }, {responsive: true});
@@ -1114,103 +1193,149 @@
             let title = "";
             let dimensions = [];
             let chartLabels = [];
+            let xAxisTitle = 'Aperture Index Map';
 
             if (mode === 'internal') {
-                const idxA = parseInt(UI.selPointA.value, 10);
-                const idxB = parseInt(UI.selPointB.value, 10);
-                if (idxA === idxB) { alert("Please select two distinct points."); return; }
+                const valA = UI.selPointA.value;
+                const valB = UI.selPointB.value;
+                if (valA === valB) { showNotification("Please select two distinct points.", "error"); return; }
                 
-                title = `Dimension: Pt ${idxA} to Pt ${idxB} (${metricName})`;
+                title = `Dimension: ${UI.selPointA.options[UI.selPointA.selectedIndex].text} to ${UI.selPointB.options[UI.selPointB.selectedIndex].text} (${metricName})`;
                 UI.emptyDimensionMsg.classList.add('hidden');
 
                 dimensions = State.apertures.map((ap, index) => {
                     chartLabels.push(String(index));
-                    const p1 = ap[idxA]; const p2 = ap[idxB];
+                    const p1 = valA === 'centroid' ? State.centroids[index] : ap[parseInt(valA, 10)];
+                    const p2 = valB === 'centroid' ? State.centroids[index] : ap[parseInt(valB, 10)];
                     if (!p1 || !p2) return null;
                     if (metric === 'euclidean') return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2));
                     else if (metric === 'dx') return Math.abs(p2.x - p1.x);
                     else if (metric === 'dy') return Math.abs(p2.y - p1.y);
+                    else if (metric === 'angle') return Math.atan2(Math.abs(p2.y - p1.y), Math.abs(p2.x - p1.x)) * (180 / Math.PI);
                     return null;
                 });
-            } else {
-                const n = parseInt(mode.split('_')[1]); 
+            } else if (mode.startsWith('neighbor_')) {
+                const parts = mode.split('_');
+                const n = parseInt(parts[parts.length - 1], 10);
                 const rankName = n === 1 ? '1st' : (n === 2 ? '2nd' : '3rd');
-                title = `Inter-Aperture: ${rankName} Closest (${metricName})`;
+                let metricLabel = metric === 'dx' ? 'X Distance' : (metric === 'dy' ? 'Y Distance' : (metric === 'angle' ? 'Lattice Angle' : 'Absolute Distance'));
+                title = `${rankName} Neighbor Along Lattice: ${metricLabel}`;
+                
                 UI.emptyDimensionMsg.classList.add('hidden');
 
-                let expectedDx = State.refStep.dx * n;
-                let expectedDy = State.refStep.dy * n;
-                let expectedDist = Math.sqrt(expectedDx*expectedDx + expectedDy*expectedDy);
+                const latVx = State.latticeVector?.dx || State.refStep.dx || 1;
+                const latVy = State.latticeVector?.dy || State.refStep.dy || 0;
+                const latMag = Math.sqrt(latVx * latVx + latVy * latVy) || 1;
 
                 dimensions = State.centroids.map((ci, i) => {
-                    let bestNeighbor = null;
-                    let minDiff = Infinity;
-                    
+                    let candidates = [];
                     for (let j = 0; j < State.centroids.length; j++) {
                         if (i === j) continue;
-                        let dx = Math.abs(State.centroids[j].x - ci.x);
-                        let dy = Math.abs(State.centroids[j].y - ci.y);
+                        let cj = State.centroids[j];
                         
-                        let diff = Math.sqrt(Math.pow(dx - expectedDx, 2) + Math.pow(dy - expectedDy, 2));
-                        if (diff < minDiff) {
-                            minDiff = diff;
-                            bestNeighbor = { index: j, pt: State.centroids[j] };
+                        let dx = cj.x - ci.x;
+                        let dy = cj.y - ci.y;
+                        let dz = cj.z - ci.z;
+                        let dist2D = Math.sqrt(dx * dx + dy * dy);
+                        if (dist2D < 1e-5) continue;
+                        
+                        // Directional projection along the lattice vector
+                        let proj = (dx * latVx + dy * latVy) / latMag;
+                        if (proj <= 0) continue; // Keep only forward progression along the lattice line
+                        
+                        // Perpendicular offset from lattice line
+                        let perp = Math.abs(dx * latVy - dy * latVx) / latMag;
+                        let angleDev = Math.atan2(perp, proj); // deviation angle
+                        
+                        // Match apertures within a 30° cone along the lattice vector direction
+                        if (angleDev <= (30 * Math.PI / 180)) {
+                            candidates.push({
+                                index: j,
+                                pt: cj,
+                                proj: proj,
+                                dist3D: Math.sqrt(dx * dx + dy * dy + dz * dz),
+                                dx: Math.abs(dx),
+                                dy: Math.abs(dy)
+                            });
                         }
                     }
 
-                    if (bestNeighbor && minDiff < (expectedDist * 0.4)) {
-                        chartLabels.push(`${i}→${bestNeighbor.index}`);
-                        let p1 = ci; let p2 = bestNeighbor.pt;
-                        if (metric === 'euclidean') return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2));
-                        else if (metric === 'dx') return Math.abs(p2.x - p1.x);
-                        else if (metric === 'dy') return Math.abs(p2.y - p1.y);
+                    // Sort candidates by progressive projection along the lattice direction
+                    candidates.sort((a, b) => a.proj - b.proj);
+
+                    if (candidates.length >= n) {
+                        let target = candidates[n - 1];
+                        chartLabels.push(`${i}→${target.index}`);
+                        if (metric === 'dx') return target.dx;
+                        if (metric === 'dy') return target.dy;
+                        if (metric === 'angle') return Math.atan2(target.dy, target.dx) * (180 / Math.PI);
+                        if (metric === 'euclidean') return target.dist3D;
                         return null;
                     } else {
                         chartLabels.push(String(i));
                         return null;
                     }
                 });
+            } else if (mode === 'absolute_pos') {
+                const valA = UI.selPointA.value;
+                const ptName = UI.selPointA.options[UI.selPointA.selectedIndex].text;
+                title = `Absolute Position: ${ptName} (${metricName})`;
+                UI.emptyDimensionMsg.classList.add('hidden');
+
+                dimensions = State.apertures.map((ap, index) => {
+                    chartLabels.push(String(index));
+                    const pt = valA === 'centroid' ? State.centroids[index] : ap[parseInt(valA, 10)];
+                    if (!pt) return null;
+                    if (metric === 'x') return pt.x;
+                    else if (metric === 'y') return pt.y;
+                    else if (metric === 'z') return pt.z;
+                    return null;
+                });
+            } else if (mode === 'raw_points') {
+                title = `All Points: ${metricName}`;
+                UI.emptyDimensionMsg.classList.add('hidden');
+                xAxisTitle = 'Point Index';
+
+                dimensions = State.rawPoints.map((pt, index) => {
+                    chartLabels.push(String(index));
+                    if (metric === 'x') return pt.x;
+                    else if (metric === 'y') return pt.y;
+                    else if (metric === 'z') return pt.z;
+                    return null;
+                });
             }
 
             State.dimensionCharts++;
             const idx = State.dimensionCharts;
             const chartDivId = `dimChart_${idx}`;
-            State.customDims[chartDivId] = { values: dimensions, labels: chartLabels };
+            State.customDims[chartDivId] = { values: dimensions, labels: chartLabels, xAxisTitle: xAxisTitle, metric: metric, title: title };
 
             const wrapper = document.createElement('div');
             wrapper.className = 'border border-slate-200 rounded-md p-4 bg-white relative chart-controls flex flex-col';
             wrapper.innerHTML = `
-                <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors px-2 py-1 z-10" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
+                <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors px-2 py-1" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
-                <div class="flex flex-col xl:flex-row xl:justify-between items-start mb-4 pr-8 gap-3">
+                <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start mb-2 pr-8 gap-3">
                     <div class="flex-1 break-words">
                         <h4 class="font-medium text-slate-700 text-sm">${title}</h4>
-                        <p class="text-xs text-slate-500 font-medium" id="avgDim_${idx}">Avg: 0.0000</p>
+                        <p class="text-xs text-slate-500" id="avgDim_${idx}">Avg: 0.0</p>
                     </div>
-                    <div class="flex flex-col gap-2 bg-slate-50 p-2 rounded border border-slate-200 shrink-0 min-w-[280px]">
-                        <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
-                            <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                                <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
-                                <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
-                            </div>
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Scale</span>
-                                <input type="number" id="minDim_${idx}" placeholder="Min" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
-                                <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
-                            </div>
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
                         </div>
-                        <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-1">
-                                <span class="text-[9px] text-slate-500 uppercase mr-1">Tolerance</span>
-                                <input type="number" id="nomDim_${idx}" placeholder="Nominal" step="any" oninput="renderCustomDimChart(${idx})">
-                                <span class="text-xs text-slate-400">&plusmn;</span>
-                                <input type="number" id="tolDim_${idx}" placeholder="Tol" step="any" oninput="renderCustomDimChart(${idx})">
-                            </div>
-                            <div class="border-l border-slate-300 pl-2">
-                                <button onclick="downloadPlot('${chartDivId}', '${title.replace(/[^a-zA-Z0-9 ()]/g, '_')}')" class="text-slate-400 hover:text-blue-600 transition-colors px-2 py-1 bg-white border border-slate-200 rounded shadow-sm text-xs" title="Download PNG"><i class="fa-solid fa-camera"></i> Save</button>
-                            </div>
+                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
+                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Scale</span>
+                            <input type="number" id="minDim_${idx}" placeholder="Min" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                            <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="nomDim_${idx}" placeholder="Nominal" step="any" oninput="renderCustomDimChart(${idx})">
+                            <span class="text-xs text-slate-400">&plusmn;</span>
+                            <input type="number" id="tolDim_${idx}" placeholder="Tol" step="any" oninput="renderCustomDimChart(${idx})">
                         </div>
                     </div>
                 </div>
@@ -1218,6 +1343,27 @@
             `;
             UI.dynamicChartsContainer.appendChild(wrapper);
             renderCustomDimChart(idx);
+        }
+
+        function addNeighborPreset(metricType) {
+            if (State.centroids.length === 0) {
+                showNotification("Please process coordinate data first.", "error");
+                return;
+            }
+
+            const currentMode = UI.selDimMode.value;
+            const currentMetric = UI.selMetricType.value;
+
+            ['neighbor_1', 'neighbor_2', 'neighbor_3'].forEach(mode => {
+                UI.selDimMode.value = mode;
+                toggleDimMode();
+                UI.selMetricType.value = metricType;
+                addDimensionChart();
+            });
+
+            UI.selDimMode.value = currentMode;
+            toggleDimMode();
+            UI.selMetricType.value = currentMetric;
         }
 
         function deleteCustomChart(chartId, element) {
@@ -1237,18 +1383,15 @@
             const origTitle = el.layout.title;
             const origMargin = el.layout.margin;
 
-            // Temporarily apply layout changes to include title and axes in the image
             await Plotly.relayout(plotId, { 
                 'title.text': chartTitle,
                 'title.font.size': 18,
-                margin: { l: 60, r: 40, b: 80, t: 60 } // Extra margin space to prevent clipping of titles/axes
+                margin: { l: 60, r: 40, b: 80, t: 60 }
             });
 
             const safeFilename = `${partNum}_${serialNum}_${chartTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            
             await Plotly.downloadImage(plotId, { format: 'png', width: 1200, height: 800, filename: safeFilename });
 
-            // Restore the layout seamlessly
             await Plotly.relayout(plotId, { 
                 title: origTitle,
                 margin: origMargin
@@ -1257,7 +1400,7 @@
 
         async function downloadPDFReport() {
             if (!window.jspdf) {
-                alert("PDF library is still loading. Please try again in a moment.");
+                showNotification("PDF library is still loading. Please try again in a moment.", "error");
                 return;
             }
 
@@ -1324,7 +1467,7 @@
                     
                     await Plotly.relayout(plotEl, { margin: { l: 50, r: 20, b: 90, t: origTop } });
                     
-                    const pxWidth = 1200; 
+                    const pxWidth = 1600; 
                     const pxHeight = Math.round((p.h / printWidth) * pxWidth);
                     
                     const imgUrl = await Plotly.toImage(plotEl, { format: 'jpeg', width: pxWidth, height: pxHeight });
@@ -1348,10 +1491,11 @@
                 const fnPart = document.getElementById('inpPartNum').value ? document.getElementById('inpPartNum').value + '_' : '';
                 const fnSerial = document.getElementById('inpSerialNum').value ? document.getElementById('inpSerialNum').value + '_' : '';
                 doc.save(`${fnPart}${fnSerial}Analyzer_Report.pdf`);
+                showNotification("PDF Report generated successfully.", "success");
 
             } catch (err) {
                 console.error("PDF Export Error: ", err);
-                alert("An error occurred during PDF generation.");
+                showNotification("An error occurred during PDF generation.", "error");
             } finally {
                 UI.btnDownloadPDF.innerHTML = originalBtnHTML;
                 UI.btnDownloadPDF.disabled = false;
