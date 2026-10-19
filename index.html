@@ -34,8 +34,8 @@
         .glass-panel { background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
         .dark .glass-panel { background: rgba(30, 41, 59, 0.95); border-color: #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
         
-        /* Enforce minimum and maximum sizing for the newly resizable 3D overview panel */
-        #cardOverview { min-height: 250px; min-width: 300px; max-width: 100%; }
+        /* Enforce minimum sizing for the newly resizable 3D overview panel */
+        #cardOverview { min-height: 250px; min-width: 300px; }
         
         /* Compact numerical inputs for the chart controls */
         .chart-controls input[type="number"] { width: 4rem; font-size: 0.75rem; padding: 0.25rem; }
@@ -44,7 +44,7 @@
 <body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
 
     <!-- Sidebar Controls -->
-    <aside id="appSidebar" class="w-full md:w-80 h-full glass-panel flex flex-col z-20 border-r border-slate-200 dark:border-slate-700 shrink-0 transition-all duration-300">
+    <aside id="appSidebar" class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 dark:border-slate-700 shrink-0 transition-all duration-300">
         <div class="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center transition-colors">
             <div>
                 <h1 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
@@ -140,12 +140,10 @@
     </aside>
 
     <!-- Main Content Area -->
-    <!-- NOTE: Removed overflow-y-auto from mainContainer so it acts purely as a structural wrapper -->
-    <main class="flex-1 h-full overflow-hidden p-4 md:p-6 bg-slate-100 dark:bg-slate-900 flex flex-col gap-4 relative transition-colors" id="mainContainer">
+    <main class="flex-1 h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-slate-100 dark:bg-slate-900 flex flex-col gap-6 relative transition-colors" id="mainContainer">
         
         <!-- Toolbar -->
-        <!-- NOTE: Removed sticky top-0 as the parent no longer scrolls, keeping it fixed at the top organically -->
-        <div class="flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 z-40 transition-colors">
+        <div class="flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 sticky top-0 z-40 transition-colors">
             <button id="btnToggleSidebar" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-md text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2 font-medium text-sm border border-slate-300 dark:border-slate-600 shadow-sm" title="Toggle Sidebar">
                 <i class="fa-solid fa-bars-staggered"></i> <span class="hidden sm:inline">Toggle Menu</span>
             </button>
@@ -162,7 +160,7 @@
         </div>
 
         <!-- Welcome Screen -->
-        <div id="welcomeScreen" class="absolute inset-0 mt-20 flex items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 transition-colors">
+        <div id="welcomeScreen" class="absolute inset-0 mt-16 flex items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 transition-colors">
             <div class="text-center max-w-md p-8 glass-panel rounded-xl shadow-lg">
                 <i class="fa-solid fa-cubes text-5xl text-blue-500 mb-4"></i>
                 <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Aperture Tolerance Analyzer</h2>
@@ -171,17 +169,16 @@
             </div>
         </div>
 
-        <!-- NOTE: The layoutWrapper will dynamically handle the overflow-y to permit scrollable regions -->
-        <div id="layoutWrapper" class="flex w-full relative min-h-0 flex-1">
+        <div id="layoutWrapper" class="flex flex-col gap-6 w-full min-h-full relative">
             <!-- 3D Overview Chart -->
-            <div class="glass-panel rounded-lg p-4 shadow-sm hidden flex-col transition-all duration-300 z-30 overflow-hidden shrink-0" id="cardOverview">
+            <div class="glass-panel rounded-lg p-4 shadow-sm w-full hidden flex-col transition-all duration-300" id="cardOverview">
                 <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-4 shrink-0">
                     <h3 class="text-lg font-semibold flex items-center shrink-0 dark:text-slate-100">
                         <i class="fa-solid fa-cube text-slate-400 dark:text-slate-500 mr-2"></i> 3D Array Overview
                     </h3>
                     
-                    <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded border border-slate-200 dark:border-slate-700">
-                        <div class="flex items-center border-r border-slate-300 dark:border-slate-600 pr-2 gap-1">
+                    <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full xl:w-auto">
+                        <div class="flex items-center border-r border-slate-300 dark:border-slate-600 pr-2 gap-1 flex-wrap">
                             <span class="text-slate-500 dark:text-slate-400 font-medium mr-1">View:</span>
                             <button onclick="set3DView('xy')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Top (XY)">XY</button>
                             <button onclick="set3DView('xz')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Front (XZ)">XZ</button>
@@ -207,7 +204,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3 pl-2">
+                        <div class="flex items-center gap-3 pl-2 flex-wrap">
                             <label class="flex items-center gap-1 cursor-pointer" title="Show Aperture Numbers">
                                 <input type="checkbox" id="chkShowLabels" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600" onchange="update3DOverview()">
                                 <span class="text-slate-600 dark:text-slate-300 text-xs font-medium">Labels</span>
@@ -228,23 +225,23 @@
                     </div>
                 </div>
                 <!-- Wrapper for absolute sizing to fix Plotly resize loops and clipping -->
-                <div id="overviewChartWrapper" class="relative w-full h-full flex-1 mt-2">
+                <div id="overviewChartWrapper" class="relative w-full flex-1 mt-2">
                     <div id="plotOverview" class="absolute inset-0"></div>
                 </div>
             </div>
 
             <div id="chartsScrollContainer" class="flex flex-col gap-6 w-full transition-all duration-300">
                 <!-- Stepping Charts (X, Y, Angle) -->
-                <div class="grid gap-6 hidden chart-controls transition-all duration-300" id="cardSteps">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls transition-all duration-300" id="cardSteps">
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
-                            <div class="flex-1 break-words">
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                        <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
+                            <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-left-right text-slate-400 dark:text-slate-500 mr-2"></i> X-Lattice</h3>
                                 <p class="text-[10px] text-slate-500 dark:text-slate-400">Absolute X distance to the primary neighbor.</p>
                                 <div id="stats_stepX" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                                 <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                                     <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                                     <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
@@ -270,14 +267,14 @@
                         <div id="plotStepX" class="w-full flex-1 min-h-[250px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
-                            <div class="flex-1 break-words">
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                        <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
+                            <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-up-down text-slate-400 dark:text-slate-500 mr-2"></i> Y-Lattice</h3>
                                 <p class="text-[10px] text-slate-500 dark:text-slate-400">Absolute Y distance to the primary neighbor.</p>
                                 <div id="stats_stepY" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                                 <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                                     <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                                     <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
@@ -303,14 +300,14 @@
                         <div id="plotStepY" class="w-full flex-1 min-h-[250px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
-                            <div class="flex-1 break-words">
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                        <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
+                            <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-angle-right text-slate-400 dark:text-slate-500 mr-2"></i> Lattice Angle</h3>
                                 <p class="text-[10px] text-slate-500 dark:text-slate-400">Vector angle of the primary step.</p>
                                 <div id="stats_angle" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                                 <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                                     <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                                     <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
@@ -338,16 +335,16 @@
                 </div>
 
                 <!-- Bounding Box Charts (Width and Height) -->
-                <div class="grid gap-6 hidden chart-controls" id="cardBB">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls" id="cardBB">
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
-                            <div class="flex-1 break-words">
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                        <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
+                            <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Width</h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Maximum span in the X-axis for each aperture.</p>
                                 <div id="stats_bbX" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                                 <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                                     <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                                     <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
@@ -373,14 +370,14 @@
                         <div id="plotBBX" class="w-full flex-1 min-h-[300px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
-                            <div class="flex-1 break-words">
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                        <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
+                            <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Height</h3>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">Maximum span in the Y-axis for each aperture.</p>
                                 <div id="stats_bbY" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
                             </div>
-                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                                 <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                                     <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                                     <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
@@ -408,16 +405,16 @@
                 </div>
 
                 <!-- Notable Dimensions Section -->
-                <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls transition-all duration-300" id="cardDimensions">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4 mb-4 gap-4">
-                        <div class="flex-1 break-words">
+                <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls transition-all duration-300 w-full" id="cardDimensions">
+                    <div class="flex flex-col justify-between border-b border-slate-100 dark:border-slate-700 pb-4 mb-4 gap-4 w-full">
+                        <div class="w-full break-words min-w-0">
                             <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <i class="fa-solid fa-ruler-combined text-slate-400 dark:text-slate-500"></i> Track Notable Dimensions
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Select a target mode and metric to calculate specific offsets or angles across the array.</p>
                         </div>
                         
-                        <div class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-md border border-slate-200 dark:border-slate-700 flex-wrap shrink-0">
+                        <div class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-md border border-slate-200 dark:border-slate-700 flex-wrap w-full">
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Target Mode</label>
                                 <select id="selDimMode" class="w-64 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded custom-scrollbar dark:bg-slate-700 dark:text-white">
@@ -592,57 +589,50 @@
                 bb.classList.remove('hidden');
             }
 
-            // Reset base layout classes and clear any manually dragged widths/heights
-            overview.style.width = '';
-            overview.style.height = '';
-            
-            // Apply standard resets
-            overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-all duration-300 z-30 overflow-hidden shrink-0';
+            // Reset base layout classes. Adding 'overflow-hidden' enables standard CSS resize handles.
+            overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-all duration-300 z-30 overflow-hidden';
             scrollContainer.className = 'flex flex-col gap-6 transition-all duration-300';
             steps.className = 'grid gap-6 chart-controls transition-all duration-300';
             bb.className = 'grid gap-6 chart-controls transition-all duration-300';
             
-            // Give wrapper flex-1 and min-h-0 to appropriately consume height and allow inner scrolling
-            wrapper.className = 'flex w-full relative min-h-0 flex-1'; 
+            // Clean inline sticky top and manual resize dimension styles if any 
+            overview.style.top = '';
+            overview.style.width = '';
+            overview.style.height = '';
             
             // Apply mode-specific layouts
             if (mode === 'grid') {
-                wrapper.classList.add('flex-col', 'gap-6', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
-                overview.classList.add('w-full', 'min-h-[400px]', 'resize-y');
+                wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative';
+                overview.classList.add('w-full', 'resize-y');
                 scrollContainer.classList.add('w-full');
                 steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
                 bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
-                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+                chartWrapper.className = 'relative w-full max-w-[900px] aspect-square mx-auto flex-1 mt-2';
             } else if (mode === 'full') {
-                wrapper.classList.add('flex-col', 'gap-6', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
-                overview.classList.add('w-full', 'min-h-[60vh]', 'resize-y');
+                wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative';
+                overview.classList.add('w-full', 'resize-y');
                 scrollContainer.classList.add('w-full');
                 steps.classList.add('grid-cols-1');
                 bb.classList.add('grid-cols-1');
-                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+                chartWrapper.className = 'relative w-full flex-1 mt-2 min-h-[60vh]';
             } else if (mode === 'split') {
-                // Wrapper prevents overall page scroll, manages Split
-                wrapper.classList.add('flex-col', 'xl:flex-row', 'gap-6', 'overflow-hidden');
-                // The 3D Overview occupies left half, fixed and resizable
-                overview.classList.add('w-full', 'xl:w-1/2', 'h-[40vh]', 'xl:h-full', 'resize-y', 'xl:resize-x');
-                // The Charts scroll container is exclusively given scroll permissions
-                scrollContainer.classList.add('w-full', 'xl:flex-1', 'h-full', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-4');
+                wrapper.className = 'flex flex-col xl:flex-row gap-6 w-full min-h-full relative items-start';
+                // self-start prevents flexbox from stretching the item, which previously broke the sticky behavior
+                overview.classList.add('xl:w-1/2', 'xl:sticky', 'top-20', 'self-start', 'xl:h-[calc(100vh-7rem)]', 'shadow-xl', 'resize-x');
+                scrollContainer.classList.add('w-full', 'xl:w-1/2');
                 steps.classList.add('grid-cols-1');
                 bb.classList.add('grid-cols-1');
-                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+                chartWrapper.className = 'relative w-full flex-1 mt-2 min-h-[300px] h-full';
             } else if (mode === 'pinned-top') {
-                // Wrapper prevents overall page scroll, manages Top/Bottom
-                wrapper.classList.add('flex-col', 'gap-6', 'overflow-hidden');
-                // The 3D Overview occupies the top half, fixed and resizable
-                overview.classList.add('w-full', 'h-[45vh]', 'resize-y');
-                // The Charts scroll container flows underneath
-                scrollContainer.classList.add('w-full', 'flex-1', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-4');
+                wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative items-start';
+                overview.classList.add('w-full', 'sticky', 'top-20', 'self-start', 'h-[50vh]', 'shadow-xl', 'resize-y');
+                scrollContainer.classList.add('w-full');
                 steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
                 bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
-                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+                chartWrapper.className = 'relative w-full flex-1 mt-2 h-full';
             }
             
-            // Force Plotly to recalculate bounds immediately and again after transition
+            // Force Plotly to recalculate bounds to match new absolute container
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
             setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 150);
             setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 300);
@@ -1034,7 +1024,7 @@
             UI.exportPanel.classList.remove('hidden');
             UI.cardDimensions.classList.remove('hidden');
 
-            updateLayoutMode(); 
+            updateLayoutMode(); // Applies layouts and unhides cards
 
             UI.statTotalPoints.innerText = State.rawPoints.length;
             UI.statApertures.innerText = State.apertures.length;
@@ -1277,8 +1267,7 @@
                 legend: { x: 0, y: 1, font: { color: theme.fontColor } }, 
                 paper_bgcolor: theme.paper_bgcolor, 
                 plot_bgcolor: theme.plot_bgcolor,
-                font: { color: theme.fontColor },
-                autosize: true
+                font: { color: theme.fontColor }
             };
 
             if (is2D) {
@@ -1666,17 +1655,17 @@
             State.customDims[chartDivId] = { values: dimensions, labels: chartLabels, xAxisTitle: xAxisTitle, metric: metric, title: title };
 
             const wrapper = document.createElement('div');
-            wrapper.className = 'border border-slate-200 dark:border-slate-700 rounded-md p-4 bg-white dark:bg-slate-800 relative chart-controls flex flex-col';
+            wrapper.className = 'border border-slate-200 dark:border-slate-700 rounded-md p-4 bg-white dark:bg-slate-800 relative chart-controls flex flex-col w-full';
             wrapper.innerHTML = `
                 <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
-                <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start mb-2 pr-8 gap-3">
-                    <div class="flex-1 break-words">
+                <div class="flex flex-col items-start mb-2 gap-3 w-full">
+                    <div class="w-full break-words min-w-0 pr-8">
                         <h4 class="font-medium text-slate-700 dark:text-slate-200 text-sm">${title}</h4>
                         <div id="stats_${chartDivId}" class="text-[11px] font-medium text-slate-600 dark:text-slate-400 mt-1.5 bg-slate-100/80 dark:bg-slate-700/50 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 transition-colors">Avg: 0.0</div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/30 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/30 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                         <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                             <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
                             <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})">
@@ -1975,29 +1964,26 @@
             }
         }
 
-        // Debounced ResizeObserver to optimize Plotly reflows while dragging the CSS resize handles
-        let resizeTimeout;
         const resizeObserver = new ResizeObserver(() => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
-                plots.forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el && el.layout && !UI.cardOverview.classList.contains('hidden')) {
-                        Plotly.Plots.resize(id);
-                    }
-                });
-                document.querySelectorAll('[id^="dimChart_"]').forEach(chart => {
-                    if (chart.layout) Plotly.Plots.resize(chart.id);
-                });
-            }, 50); // 50ms debounce for responsive drag-resizing
+            const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
+            plots.forEach(id => {
+                if (document.getElementById(id) && !UI.cardOverview.classList.contains('hidden')) {
+                    Plotly.Plots.resize(id);
+                }
+            });
+            document.querySelectorAll('[id^="dimChart_"]').forEach(chart => Plotly.Plots.resize(chart.id));
         });
         
-        // Only observe the specific layout wrappers instead of the entire scroll panel
-        resizeObserver.observe(document.getElementById('layoutWrapper'));
+        resizeObserver.observe(document.getElementById('mainContainer'));
         if (document.getElementById('cardOverview')) {
             resizeObserver.observe(document.getElementById('cardOverview'));
         }
+
+        // Initialize Defaults
+        document.addEventListener('DOMContentLoaded', () => {
+            updateLayoutMode();
+            updateAllChartsTheme();
+        });
 
     </script>
 </body>
