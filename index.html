@@ -3,412 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aperture Tolerance Analyzer</title>
+    <title>Aperture Tolerance Analyzer - AF Engineering Tools</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {}
+            }
+        }
+    </script>
     <!-- Plotly.js for advanced charting -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <!-- jsPDF for robust, direct-to-image PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
         .glass-panel { background: rgba(255, 255, 255, 0.95); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
+        .dark .glass-panel { background: rgba(30, 41, 59, 0.95); border-color: #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
+        
+        /* Enforce minimum and maximum sizing for the newly resizable 3D overview panel */
+        #cardOverview { min-height: 250px; min-width: 300px; max-width: 100%; }
         
         /* Compact numerical inputs for the chart controls */
         .chart-controls input[type="number"] { width: 4rem; font-size: 0.75rem; padding: 0.25rem; }
     </style>
 </head>
-<body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800">
+<body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
 
     <!-- Sidebar Controls -->
-    <aside class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 shrink-0">
-        <div class="p-5 border-b border-slate-200 bg-slate-50">
-            <h1 class="text-xl font-bold text-slate-900 flex items-center gap-2">
-                <i class="fa-solid fa-microscope text-blue-600"></i>
-                Aperture Analyzer
-            </h1>
-            <p class="text-xs text-slate-500 mt-1">XYZ Coordinate Tolerance Tracking</p>
+    <aside id="appSidebar" class="w-full md:w-80 h-full glass-panel flex flex-col z-20 border-r border-slate-200 dark:border-slate-700 shrink-0 transition-all duration-300">
+        <div class="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center transition-colors">
+            <div>
+                <h1 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 tracking-tight">
+                    <i class="fa-solid fa-layer-group text-blue-600 dark:text-blue-400"></i>
+                    Aperture Tolerance Analyzer
+                </h1>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
+            </div>
+            <button id="btnThemeToggle" onclick="toggleTheme()" class="text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 p-2.5 rounded-full transition-colors focus:outline-none">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:block"></i>
+            </button>
         </div>
 
         <div class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-6">
             
-            <!-- Metadata Section -->
+            <!-- Part Info -->
             <div class="space-y-3">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Part Info</h2>
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Part Info</h2>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-slate-700">Part Number</label>
-                        <input type="text" id="inpPartNum" placeholder="e.g. PN-123" class="block w-full text-sm p-1.5 border border-slate-300 rounded-md">
+                        <label class="block text-xs font-medium mb-1 text-slate-700 dark:text-slate-300">Part Number</label>
+                        <input type="text" id="inpPartNum" placeholder="e.g. PN-123" class="block w-full text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-slate-700">Serial No.</label>
-                        <input type="text" id="inpSerialNum" placeholder="e.g. SN-456" class="block w-full text-sm p-1.5 border border-slate-300 rounded-md">
+                        <label class="block text-xs font-medium mb-1 text-slate-700 dark:text-slate-300">Serial No.</label>
+                        <input type="text" id="inpSerialNum" placeholder="e.g. SN-456" class="block w-full text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-700">Comments</label>
-                    <textarea id="inpComments" rows="2" placeholder="Optional notes..." class="block w-full text-sm p-1.5 border border-slate-300 rounded-md custom-scrollbar"></textarea>
+                    <label class="block text-xs font-medium mb-1 text-slate-700 dark:text-slate-300">Comments</label>
+                    <textarea id="inpComments" rows="2" placeholder="Optional notes..." class="block w-full text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md custom-scrollbar dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500"></textarea>
                 </div>
             </div>
 
-            <!-- Data Loading Section -->
+            <!-- Data Source -->
             <div class="space-y-3">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">1. Data Source</h2>
-                
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">1. Data Source</h2>
                 <div>
-                    <label class="block text-sm font-medium mb-1">Upload XYZ File (.txt, .csv)</label>
-                    <input type="file" id="fileInput" accept=".txt,.csv" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-md">
+                    <label class="block text-sm font-medium mb-1 dark:text-slate-200">Upload XYZ File (.txt, .csv)</label>
+                    <input type="file" id="fileInput" accept=".txt,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer border border-slate-300 dark:border-slate-600 rounded-md">
                     <p class="text-xs text-slate-400 mt-1">Format: X Y Z</p>
                 </div>
-
                 <div class="relative flex items-center py-2">
-                    <div class="flex-grow border-t border-slate-300"></div>
+                    <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
                     <span class="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">or</span>
-                    <div class="flex-grow border-t border-slate-300"></div>
+                    <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
                 </div>
-
-                <button id="btnLoadSample" class="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 border border-slate-300">
+                <button id="btnLoadSample" class="w-full py-2 px-4 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-md transition-colors text-sm font-medium flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-600">
                     <i class="fa-solid fa-flask"></i> Load Sample Data
                 </button>
             </div>
 
-            <!-- Processing Parameters -->
+            <!-- Configuration -->
             <div class="space-y-3">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">2. Configuration</h2>
-                
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">2. Configuration</h2>
                 <div>
-                    <label class="block text-xs font-medium mb-1 text-slate-700">Aperture Split Distance</label>
-                    <input type="number" id="inpThreshold" step="any" placeholder="Auto-detect" class="block w-full text-sm p-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                    <label class="block text-xs font-medium mb-1 text-slate-700 dark:text-slate-300">Aperture Split Distance</label>
+                    <input type="number" id="inpThreshold" step="any" placeholder="Auto-detect" class="block w-full text-sm p-2 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-slate-700 dark:text-white">
                     <p class="text-[10px] text-slate-400 mt-1 leading-tight">Max distance between points before starting a new aperture.</p>
                 </div>
-
-                <div class="p-2 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                <div class="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded text-xs text-blue-700 dark:text-blue-400">
                     <i class="fa-solid fa-circle-info mr-1"></i> Lattice primary step vector is automatically derived via global median analysis to ensure consistency.
                 </div>
-
-                <button id="btnProcess" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+                <button id="btnProcess" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-gears"></i> Process Coordinates
                 </button>
             </div>
 
-            <!-- Summary Stats -->
-            <div id="summaryPanel" class="space-y-3 hidden border-t border-slate-200 pt-5 mt-2">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Data Summary</h2>
+            <!-- Summary Panel -->
+            <div id="summaryPanel" class="space-y-3 hidden border-t border-slate-200 dark:border-slate-700 pt-5 mt-2">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Data Summary</h2>
                 <div class="grid grid-cols-2 gap-2 text-sm">
-                    <div class="bg-slate-50 p-2 rounded border border-slate-200">
-                        <span class="block text-xs text-slate-500">Total Points</span>
-                        <span id="statTotalPoints" class="font-bold text-slate-800">0</span>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">Total Points</span>
+                        <span id="statTotalPoints" class="font-bold text-slate-800 dark:text-slate-200">0</span>
                     </div>
-                    <div class="bg-slate-50 p-2 rounded border border-slate-200">
-                        <span class="block text-xs text-slate-500">Apertures</span>
-                        <span id="statApertures" class="font-bold text-slate-800">0</span>
+                    <div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
+                        <span class="block text-xs text-slate-500 dark:text-slate-400">Apertures</span>
+                        <span id="statApertures" class="font-bold text-slate-800 dark:text-slate-200">0</span>
                     </div>
                 </div>
             </div>
 
             <!-- Export Section -->
-            <div id="exportPanel" class="space-y-3 hidden border-t border-slate-200 pt-5 mt-2">
-                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">3. Export</h2>
-                <button id="btnDownloadPDF" class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+            <div id="exportPanel" class="space-y-3 hidden border-t border-slate-200 dark:border-slate-700 pt-5 mt-2">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">3. Export</h2>
+                <button id="btnDownloadPDF" class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF Report
                 </button>
             </div>
-
         </div>
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 h-full overflow-y-auto custom-scrollbar p-4 md:p-6 bg-slate-100 flex flex-col gap-6 relative" id="mainContainer">
+    <!-- NOTE: Removed overflow-y-auto from mainContainer so it acts purely as a structural wrapper -->
+    <main class="flex-1 h-full overflow-hidden p-4 md:p-6 bg-slate-100 dark:bg-slate-900 flex flex-col gap-4 relative transition-colors" id="mainContainer">
         
+        <!-- Toolbar -->
+        <!-- NOTE: Removed sticky top-0 as the parent no longer scrolls, keeping it fixed at the top organically -->
+        <div class="flex items-center justify-between bg-white/80 dark:bg-slate-800/80 backdrop-blur-md p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 z-40 transition-colors">
+            <button id="btnToggleSidebar" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-md text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-2 font-medium text-sm border border-slate-300 dark:border-slate-600 shadow-sm" title="Toggle Sidebar">
+                <i class="fa-solid fa-bars-staggered"></i> <span class="hidden sm:inline">Toggle Menu</span>
+            </button>
+            
+            <div class="flex items-center gap-3">
+                <label class="hidden sm:block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Layout Style:</label>
+                <select id="selLayoutMode" class="text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm font-medium">
+                    <option value="grid">Grid (Default)</option>
+                    <option value="full">Full Width (Stack)</option>
+                    <option value="split">Pinned 3D (Split Screen)</option>
+                    <option value="pinned-top">Pinned 3D (Top Bar)</option>
+                </select>
+            </div>
+        </div>
+
         <!-- Welcome Screen -->
-        <div id="welcomeScreen" class="absolute inset-0 flex items-center justify-center bg-slate-100 z-10">
+        <div id="welcomeScreen" class="absolute inset-0 mt-20 flex items-center justify-center bg-slate-100 dark:bg-slate-900 z-10 transition-colors">
             <div class="text-center max-w-md p-8 glass-panel rounded-xl shadow-lg">
                 <i class="fa-solid fa-cubes text-5xl text-blue-500 mb-4"></i>
-                <h2 class="text-2xl font-bold text-slate-800 mb-2">Aperture Array Analyzer</h2>
-                <p class="text-slate-600 mb-6 text-sm">Upload a text file of raw XYZ measurements to extract array stepping logic and monitor manufacturing tolerances of specific features across the array.</p>
-                <p class="text-slate-500 text-xs">Use the sidebar to load your data or generate a sample dataset to test the features.</p>
+                <h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Aperture Tolerance Analyzer</h2>
+                <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">Upload a text file of raw XYZ measurements to extract array stepping logic and monitor manufacturing tolerances of specific features across the array.</p>
+                <p class="text-slate-500 dark:text-slate-500 text-xs">Use the sidebar to load your data or generate a sample dataset to test the features.</p>
             </div>
         </div>
 
-        <!-- 3D Overview Chart -->
-        <div class="glass-panel rounded-lg p-4 shadow-sm w-full hidden" id="cardOverview">
-            <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center border-b border-slate-100 pb-2 mb-2 gap-4">
-                <h3 class="text-lg font-semibold flex items-center shrink-0">
-                    <i class="fa-solid fa-cube text-slate-400 mr-2"></i> 3D Array Overview
-                </h3>
-                
-                <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 p-1.5 rounded border border-slate-200">
-                    <div class="flex items-center border-r border-slate-300 pr-2 gap-1">
-                        <span class="text-slate-500 font-medium mr-1">View:</span>
-                        <button onclick="set3DView('xy')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Top (XY)">XY</button>
-                        <button onclick="set3DView('xz')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Front (XZ)">XZ</button>
-                        <button onclick="set3DView('yz')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Side (YZ)">YZ</button>
-                        <button onclick="set3DView('iso')" class="bg-white hover:bg-slate-200 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors" title="Isometric">Iso</button>
-                        <button id="btnEqualAxes" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded border border-slate-300 transition-colors ml-1" title="Toggle Equal Axes (1:1:1)">1:1:1</button>
-                    </div>
-
-                    <div class="flex flex-wrap items-center border-r border-slate-300 pr-2 gap-2">
-                        <div class="flex items-center gap-1" title="Points Color">
-                            <input type="color" id="inpMarkerColor" value="#3b82f6" class="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0" onchange="update3DOverview()">
-                        </div>
-                        <div class="flex items-center gap-1" title="Centroid Color">
-                            <input type="color" id="inpCentroidColor" value="#ef4444" class="w-5 h-5 rounded cursor-pointer border border-slate-300 p-0" onchange="update3DOverview()">
-                        </div>
-                        <div class="flex items-center gap-1" title="Marker Size">
-                            <span class="text-slate-500">Pts:</span>
-                            <input type="number" id="inpMarkerSize" value="2" min="1" max="15" class="w-10 p-1 border border-slate-300 rounded text-center" onchange="update3DOverview()">
-                        </div>
-                        <div class="flex items-center gap-1" title="Centroid Marker Size">
-                            <span class="text-slate-500">Ctrs:</span>
-                            <input type="number" id="inpCentroidSize" value="2" min="1" max="20" class="w-10 p-1 border border-slate-300 rounded text-center" onchange="update3DOverview()">
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3 pl-2">
-                        <label class="flex items-center gap-1 cursor-pointer" title="Show Aperture Numbers">
-                            <input type="checkbox" id="chkShowLabels" class="rounded text-blue-600 focus:ring-blue-500" onchange="update3DOverview()">
-                            <span class="text-slate-600 text-xs font-medium">Labels</span>
-                        </label>
-                        <label class="flex items-center gap-1 cursor-pointer" title="Highlight Out-of-Tolerance Apertures">
-                            <input type="checkbox" id="chkHighlightTol" class="rounded text-red-500 focus:ring-red-500" onchange="update3DOverview()">
-                            <span class="text-slate-600 text-xs font-medium">Fails</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <!-- Square aspect ratio overview chart -->
-            <div id="plotOverview" class="w-full max-w-[900px] aspect-square mx-auto"></div>
-        </div>
-
-        <!-- Stepping Charts (X, Y, Angle) -->
-        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls" id="cardSteps">
-            
-            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
-                    <div class="flex-1 break-words">
-                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-left-right text-slate-400 mr-2"></i> X-Lattice</h3>
-                        <p class="text-[10px] text-slate-500">Absolute X distance to the primary neighbor.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                            <input type="number" id="fMaxStepX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                        </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                            <input type="number" id="minStepX" placeholder="Min" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
-                            <input type="number" id="maxStepX" placeholder="Max" step="any" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="inpNomStepX" placeholder="Nom" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
-                            <span class="text-[10px] text-slate-400">&plusmn;</span>
-                            <input type="number" id="inpTolStepX" placeholder="Tol" step="any" oninput="applyTolerances('plotStepX', 'inpNomStepX', 'inpTolStepX'); update3DOverview();">
-                        </div>
-                        <div class="border-l border-slate-300 pl-1">
-                            <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="plotStepX" class="w-full flex-1 min-h-[250px]"></div>
-            </div>
-            
-            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
-                    <div class="flex-1 break-words">
-                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-arrows-up-down text-slate-400 mr-2"></i> Y-Lattice</h3>
-                        <p class="text-[10px] text-slate-500">Absolute Y distance to the primary neighbor.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                            <input type="number" id="fMaxStepY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                        </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                            <input type="number" id="minStepY" placeholder="Min" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
-                            <input type="number" id="maxStepY" placeholder="Max" step="any" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="inpNomStepY" placeholder="Nom" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
-                            <span class="text-[10px] text-slate-400">&plusmn;</span>
-                            <input type="number" id="inpTolStepY" placeholder="Tol" step="any" oninput="applyTolerances('plotStepY', 'inpNomStepY', 'inpTolStepY'); update3DOverview();">
-                        </div>
-                        <div class="border-l border-slate-300 pl-1">
-                            <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="plotStepY" class="w-full flex-1 min-h-[250px]"></div>
-            </div>
-            
-            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
-                    <div class="flex-1 break-words">
-                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-angle-right text-slate-400 mr-2"></i> Lattice Angle</h3>
-                        <p class="text-[10px] text-slate-500">Vector angle of the primary step (arctan(ΔY/ΔX)).</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data below this value">
-                            <input type="number" id="fMaxAngle" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderStepPlots()" title="Exclude data above this value">
-                        </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                            <input type="number" id="minAngle" placeholder="Min" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
-                            <input type="number" id="maxAngle" placeholder="Max" step="any" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="inpNomAngle" placeholder="Nom" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
-                            <span class="text-[10px] text-slate-400">&plusmn;</span>
-                            <input type="number" id="inpTolAngle" placeholder="Tol" step="any" oninput="applyTolerances('plotAngle', 'inpNomAngle', 'inpTolAngle'); update3DOverview();">
-                        </div>
-                        <div class="border-l border-slate-300 pl-1">
-                            <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="plotAngle" class="w-full flex-1 min-h-[250px]"></div>
-            </div>
-        </div>
-
-        <!-- Bounding Box Charts (Width and Height) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls" id="cardBB">
-            
-            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
-                    <div class="flex-1 break-words">
-                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Width</h3>
-                        <p class="text-xs text-slate-500">Maximum span in the X-axis for each aperture.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                            <input type="number" id="fMaxBBX" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                        </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                            <input type="number" id="minBBX" placeholder="Min" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
-                            <input type="number" id="maxBBX" placeholder="Max" step="any" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="inpNomBBX" placeholder="Nom" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
-                            <span class="text-xs text-slate-400">&plusmn;</span>
-                            <input type="number" id="inpTolBBX" placeholder="Tol" step="any" oninput="applyTolerances('plotBBX', 'inpNomBBX', 'inpTolBBX'); update3DOverview();">
-                        </div>
-                        <div class="border-l border-slate-300 pl-2">
-                            <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="plotBBX" class="w-full flex-1 min-h-[300px]"></div>
-            </div>
-            
-            <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
-                <div class="flex flex-col 2xl:flex-row 2xl:flex-wrap 2xl:justify-between items-start border-b border-slate-100 pb-2 mb-2 gap-3">
-                    <div class="flex-1 break-words">
-                        <h3 class="text-lg font-semibold"><i class="fa-solid fa-compress text-slate-400 mr-2"></i> Aperture Height</h3>
-                        <p class="text-xs text-slate-500">Maximum span in the Y-axis for each aperture.</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                            <input type="number" id="fMaxBBY" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderBBPlots()">
-                        </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Axis<br>Scale</span>
-                            <input type="number" id="minBBY" placeholder="Min" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
-                            <input type="number" id="maxBBY" placeholder="Max" step="any" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <input type="number" id="inpNomBBY" placeholder="Nom" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
-                            <span class="text-xs text-slate-400">&plusmn;</span>
-                            <input type="number" id="inpTolBBY" placeholder="Tol" step="any" oninput="applyTolerances('plotBBY', 'inpNomBBY', 'inpTolBBY'); update3DOverview();">
-                        </div>
-                        <div class="border-l border-slate-300 pl-2">
-                            <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 hover:text-blue-600 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="plotBBY" class="w-full flex-1 min-h-[300px]"></div>
-            </div>
-        </div>
-
-        <!-- Notable Dimensions Section -->
-        <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls" id="cardDimensions">
-            <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-4">
-                <div class="flex-1 break-words">
-                    <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                        <i class="fa-solid fa-ruler-combined text-slate-400"></i> Track Notable Dimensions
+        <!-- NOTE: The layoutWrapper will dynamically handle the overflow-y to permit scrollable regions -->
+        <div id="layoutWrapper" class="flex w-full relative min-h-0 flex-1">
+            <!-- 3D Overview Chart -->
+            <div class="glass-panel rounded-lg p-4 shadow-sm hidden flex-col transition-all duration-300 z-30 overflow-hidden shrink-0" id="cardOverview">
+                <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-4 shrink-0">
+                    <h3 class="text-lg font-semibold flex items-center shrink-0 dark:text-slate-100">
+                        <i class="fa-solid fa-cube text-slate-400 dark:text-slate-500 mr-2"></i> 3D Array Overview
                     </h3>
-                    <p class="text-xs text-slate-500 mt-1">Select a target mode and metric to calculate specific offsets or angles across the array.</p>
+                    
+                    <div class="flex flex-wrap items-center gap-2 text-xs bg-slate-50 dark:bg-slate-800/80 p-1.5 rounded border border-slate-200 dark:border-slate-700">
+                        <div class="flex items-center border-r border-slate-300 dark:border-slate-600 pr-2 gap-1">
+                            <span class="text-slate-500 dark:text-slate-400 font-medium mr-1">View:</span>
+                            <button onclick="set3DView('xy')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Top (XY)">XY</button>
+                            <button onclick="set3DView('xz')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Front (XZ)">XZ</button>
+                            <button onclick="set3DView('yz')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Side (YZ)">YZ</button>
+                            <button onclick="set3DView('iso')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Isometric">Iso</button>
+                            <button id="btnEqualAxes" class="bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors ml-1" title="Toggle Equal Axes (1:1:1)">1:1:1</button>
+                        </div>
+
+                        <div class="flex flex-wrap items-center border-r border-slate-300 dark:border-slate-600 pr-2 gap-2">
+                            <div class="flex items-center gap-1" title="Points Color">
+                                <input type="color" id="inpMarkerColor" value="#3b82f6" class="w-5 h-5 rounded cursor-pointer border border-slate-300 dark:border-slate-600 p-0" onchange="update3DOverview()">
+                            </div>
+                            <div class="flex items-center gap-1" title="Centroid Color">
+                                <input type="color" id="inpCentroidColor" value="#94a3b8" class="w-5 h-5 rounded cursor-pointer border border-slate-300 dark:border-slate-600 p-0" onchange="update3DOverview()">
+                            </div>
+                            <div class="flex items-center gap-1" title="Marker Size">
+                                <span class="text-slate-500 dark:text-slate-400">Pts:</span>
+                                <input type="number" id="inpMarkerSize" value="2" min="1" max="15" class="w-10 p-1 border border-slate-300 dark:border-slate-600 rounded text-center dark:bg-slate-700 dark:text-white" onchange="update3DOverview()">
+                            </div>
+                            <div class="flex items-center gap-1" title="Centroid Marker Size">
+                                <span class="text-slate-500 dark:text-slate-400">Ctrs:</span>
+                                <input type="number" id="inpCentroidSize" value="2" min="1" max="20" class="w-10 p-1 border border-slate-300 dark:border-slate-600 rounded text-center dark:bg-slate-700 dark:text-white" onchange="update3DOverview()">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-3 pl-2">
+                            <label class="flex items-center gap-1 cursor-pointer" title="Show Aperture Numbers">
+                                <input type="checkbox" id="chkShowLabels" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600" onchange="update3DOverview()">
+                                <span class="text-slate-600 dark:text-slate-300 text-xs font-medium">Labels</span>
+                            </label>
+                            <label class="flex items-center gap-1 cursor-pointer" title="Highlight Out-of-Tolerance Apertures">
+                                <input type="checkbox" id="chkHighlightTol" class="rounded text-red-500 focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600" onchange="update3DOverview()">
+                                <span class="text-slate-600 dark:text-slate-300 text-xs font-medium">Fails</span>
+                            </label>
+                            <!-- Fail Filter Dropdown -->
+                            <div id="failFilterContainer" class="hidden items-center ml-1 relative">
+                                <button id="btnFailFilter" class="text-xs bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 shadow-sm transition-colors">
+                                    Filter Fails <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                </button>
+                                <div id="dropdownFailFilter" class="absolute top-full right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl rounded-md p-2 z-50 hidden min-w-[160px]">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="flex items-end gap-3 bg-slate-50 p-3 rounded-md border border-slate-200 flex-wrap shrink-0">
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Target Mode</label>
-                        <select id="selDimMode" class="w-56 text-sm p-1.5 border border-slate-300 rounded custom-scrollbar">
-                            <option value="internal">Intra-Aperture (Pt to Pt)</option>
-                            <optgroup label="Lattice Direction Neighbors">
-                                <option value="neighbor_1">1st Closest Along Lattice</option>
-                                <option value="neighbor_2">2nd Closest Along Lattice</option>
-                                <option value="neighbor_3">3rd Closest Along Lattice</option>
-                            </optgroup>
-                            <optgroup label="Position & Coordinates">
-                                <option value="absolute_pos">Absolute Position (X,Y,Z)</option>
-                                <option value="raw_points">All Points (X,Y,Z)</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div id="dimPointA_container">
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Point A</label>
-                        <select id="selPointA" class="w-24 text-sm p-1.5 border border-slate-300 rounded"></select>
-                    </div>
-                    <div id="dimPointB_container">
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Point B</label>
-                        <select id="selPointB" class="w-24 text-sm p-1.5 border border-slate-300 rounded"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-slate-600 mb-1">Metric</label>
-                        <select id="selMetricType" class="w-36 text-sm p-1.5 border border-slate-300 rounded">
-                            <option value="dx">X Distance (ΔX)</option>
-                            <option value="dy">Y Distance (ΔY)</option>
-                            <option value="angle">Lattice Angle (°)</option>
-                            <option value="euclidean">Absolute Distance</option>
-                        </select>
-                    </div>
-                    <button id="btnAddDimension" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded font-medium transition-colors">
-                        Add Chart
-                    </button>
-                    <div class="flex items-center gap-1 pl-2 border-l border-slate-300">
-                        <span class="text-[10px] text-slate-500 font-semibold uppercase leading-tight mr-1">1st–3rd<br>Presets:</span>
-                        <button onclick="addNeighborPreset('dx')" class="bg-violet-600 hover:bg-violet-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor X-distance (ΔX) charts">
-                            ΔX
-                        </button>
-                        <button onclick="addNeighborPreset('dy')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Y-distance (ΔY) charts">
-                            ΔY
-                        </button>
-                        <button onclick="addNeighborPreset('angle')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Lattice Angle (°) charts">
-                            Angle
-                        </button>
-                    </div>
+                <!-- Wrapper for absolute sizing to fix Plotly resize loops and clipping -->
+                <div id="overviewChartWrapper" class="relative w-full h-full flex-1 mt-2">
+                    <div id="plotOverview" class="absolute inset-0"></div>
                 </div>
             </div>
 
-            <div id="dynamicChartsContainer" class="space-y-6">
-                <div class="text-center text-slate-400 py-8 text-sm italic" id="emptyDimensionMsg">
-                    No custom dimensions tracking yet. Use the controls above to add one.
+            <div id="chartsScrollContainer" class="flex flex-col gap-6 w-full transition-all duration-300">
+                <!-- Stepping Charts (X, Y, Angle) -->
+                <div class="grid gap-6 hidden chart-controls transition-all duration-300" id="cardSteps">
+                    
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
+                            <div class="flex-1 break-words">
+                                <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-left-right text-slate-400 dark:text-slate-500 mr-2"></i> X-Lattice</h3>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Absolute X distance to the primary neighbor.</p>
+                                <div id="stats_stepX" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                                    <input type="number" id="fMinStepX" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
+                                    <input type="number" id="fMaxStepX" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data above this value">
+                                </div>
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                    <input type="number" id="minStepX" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                                    <input type="number" id="maxStepX" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotStepX', 'minStepX', 'maxStepX')">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="inpNomStepX" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                    <input type="number" id="inpTol1StepX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol2StepX" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                </div>
+                                <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                                    <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="plotStepX" class="w-full flex-1 min-h-[250px]"></div>
+                    </div>
+                    
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
+                            <div class="flex-1 break-words">
+                                <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-up-down text-slate-400 dark:text-slate-500 mr-2"></i> Y-Lattice</h3>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Absolute Y distance to the primary neighbor.</p>
+                                <div id="stats_stepY" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                                    <input type="number" id="fMinStepY" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
+                                    <input type="number" id="fMaxStepY" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data above this value">
+                                </div>
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                    <input type="number" id="minStepY" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                                    <input type="number" id="maxStepY" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotStepY', 'minStepY', 'maxStepY')">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="inpNomStepY" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                    <input type="number" id="inpTol1StepY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol2StepY" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                </div>
+                                <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                                    <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="plotStepY" class="w-full flex-1 min-h-[250px]"></div>
+                    </div>
+                    
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
+                            <div class="flex-1 break-words">
+                                <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-angle-right text-slate-400 dark:text-slate-500 mr-2"></i> Lattice Angle</h3>
+                                <p class="text-[10px] text-slate-500 dark:text-slate-400">Vector angle of the primary step.</p>
+                                <div id="stats_angle" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                                    <input type="number" id="fMinAngle" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data below this value">
+                                    <input type="number" id="fMaxAngle" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderStepPlots()" title="Exclude data above this value">
+                                </div>
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                    <input type="number" id="minAngle" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                                    <input type="number" id="maxAngle" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotAngle', 'minAngle', 'maxAngle')">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="inpNomAngle" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                    <input type="number" id="inpTol1Angle" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol2Angle" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                </div>
+                                <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                                    <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="plotAngle" class="w-full flex-1 min-h-[250px]"></div>
+                    </div>
+                </div>
+
+                <!-- Bounding Box Charts (Width and Height) -->
+                <div class="grid gap-6 hidden chart-controls" id="cardBB">
+                    
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
+                            <div class="flex-1 break-words">
+                                <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Width</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Maximum span in the X-axis for each aperture.</p>
+                                <div id="stats_bbX" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                                    <input type="number" id="fMinBBX" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
+                                    <input type="number" id="fMaxBBX" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
+                                </div>
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                    <input type="number" id="minBBX" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                                    <input type="number" id="maxBBX" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotBBX', 'minBBX', 'maxBBX')">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="inpNomBBX" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                    <input type="number" id="inpTol1BBX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol2BBX" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                </div>
+                                <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                                    <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="plotBBX" class="w-full flex-1 min-h-[300px]"></div>
+                    </div>
+                    
+                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col">
+                        <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3">
+                            <div class="flex-1 break-words">
+                                <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Height</h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Maximum span in the Y-axis for each aperture.</p>
+                                <div id="stats_bbY" class="text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors">Avg: --</div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                                    <input type="number" id="fMinBBY" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
+                                    <input type="number" id="fMaxBBY" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderBBPlots()">
+                                </div>
+                                <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                                    <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Axis<br>Scale</span>
+                                    <input type="number" id="minBBY" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                                    <input type="number" id="maxBBY" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('plotBBY', 'minBBY', 'maxBBY')">
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <input type="number" id="inpNomBBY" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">&plusmn;</span>
+                                    <input type="number" id="inpTol1BBY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol2BBY" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                </div>
+                                <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                                    <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="plotBBY" class="w-full flex-1 min-h-[300px]"></div>
+                    </div>
+                </div>
+
+                <!-- Notable Dimensions Section -->
+                <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls transition-all duration-300" id="cardDimensions">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4 mb-4 gap-4">
+                        <div class="flex-1 break-words">
+                            <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <i class="fa-solid fa-ruler-combined text-slate-400 dark:text-slate-500"></i> Track Notable Dimensions
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Select a target mode and metric to calculate specific offsets or angles across the array.</p>
+                        </div>
+                        
+                        <div class="flex items-end gap-3 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-md border border-slate-200 dark:border-slate-700 flex-wrap shrink-0">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Target Mode</label>
+                                <select id="selDimMode" class="w-64 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded custom-scrollbar dark:bg-slate-700 dark:text-white">
+                                    <option value="internal">Intra-Aperture (Pt to Pt)</option>
+                                    <optgroup label="Lattice Direction Neighbors">
+                                        <option value="neighbor_1">1st Closest Along Lattice</option>
+                                        <option value="neighbor_2">2nd Closest Along Lattice</option>
+                                        <option value="neighbor_3">3rd Closest Along Lattice</option>
+                                    </optgroup>
+                                    <optgroup label="X Direction Neighbors">
+                                        <option value="neighbor_x_1">1st Closest Along X</option>
+                                        <option value="neighbor_x_2">2nd Closest Along X</option>
+                                        <option value="neighbor_x_3">3rd Closest Along X</option>
+                                    </optgroup>
+                                    <optgroup label="Y Direction Neighbors">
+                                        <option value="neighbor_y_1">1st Closest Along Y</option>
+                                        <option value="neighbor_y_2">2nd Closest Along Y</option>
+                                        <option value="neighbor_y_3">3rd Closest Along Y</option>
+                                    </optgroup>
+                                    <optgroup label="Position & Coordinates">
+                                        <option value="absolute_pos">Absolute Position (X,Y,Z)</option>
+                                        <option value="raw_points">All Points (X,Y,Z)</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div id="dimPointA_container">
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Point A</label>
+                                <select id="selPointA" class="w-24 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white"></select>
+                            </div>
+                            <div id="dimPointB_container">
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Point B</label>
+                                <select id="selPointB" class="w-24 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white"></select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Metric</label>
+                                <select id="selMetricType" class="w-36 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded dark:bg-slate-700 dark:text-white">
+                                    <option value="dx">X Distance (ΔX)</option>
+                                    <option value="dy">Y Distance (ΔY)</option>
+                                    <option value="angle">Lattice Angle (°)</option>
+                                    <option value="euclidean">Absolute Distance</option>
+                                </select>
+                            </div>
+                            <button id="btnAddDimension" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-1.5 rounded font-medium transition-colors">
+                                Add Chart
+                            </button>
+                            <div class="flex items-center gap-1 pl-2 border-l border-slate-300 dark:border-slate-600">
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase leading-tight mr-1">1st–3rd<br>Presets:</span>
+                                <button onclick="addNeighborPreset('dx')" class="bg-violet-600 hover:bg-violet-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor X-distance (ΔX) charts">
+                                    ΔX
+                                </button>
+                                <button onclick="addNeighborPreset('dy')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Y-distance (ΔY) charts">
+                                    ΔY
+                                </button>
+                                <button onclick="addNeighborPreset('angle')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs px-2.5 py-1.5 rounded font-medium transition-colors" title="Add 1st, 2nd, and 3rd neighbor Lattice Angle (°) charts">
+                                    Angle
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="dynamicChartsContainer" class="space-y-6">
+                        <div class="text-center text-slate-400 dark:text-slate-500 py-8 text-sm italic" id="emptyDimensionMsg">
+                            No custom dimensions tracking yet. Use the controls above to add one.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -429,14 +503,25 @@
             customDims: {},
             refStep: {dx: 0, dy: 0},
             latticeVector: {dx: 1, dy: 0},
-            outOfTolApertures: new Set(),
-            overviewView: 'iso' 
+            outOfTolApertures: { warn: new Set(), critical: new Set() },
+            overviewView: 'iso',
+            // Extended tracking stats
+            metricFails: {},
+            activeFailFilters: new Set(),
+            knownMetrics: new Set(),
+            metricsData: {}
         };
 
         const UI = {
             fileInput: document.getElementById('fileInput'),
             btnLoadSample: document.getElementById('btnLoadSample'),
             btnProcess: document.getElementById('btnProcess'),
+            btnToggleSidebar: document.getElementById('btnToggleSidebar'),
+            selLayoutMode: document.getElementById('selLayoutMode'),
+            appSidebar: document.getElementById('appSidebar'),
+            layoutWrapper: document.getElementById('layoutWrapper'),
+            chartsScrollContainer: document.getElementById('chartsScrollContainer'),
+            plotOverview: document.getElementById('plotOverview'),
             inpThreshold: document.getElementById('inpThreshold'),
             inpPartNum: document.getElementById('inpPartNum'),
             inpSerialNum: document.getElementById('inpSerialNum'),
@@ -475,7 +560,149 @@
         UI.btnEqualAxes.addEventListener('click', toggleEqualAxes);
         UI.btnDownloadPDF.addEventListener('click', downloadPDFReport);
 
+        UI.btnToggleSidebar.addEventListener('click', () => {
+            UI.appSidebar.classList.toggle('hidden');
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+        });
+
+        UI.selLayoutMode.addEventListener('change', updateLayoutMode);
+
         let isEqualAxes = false;
+
+        function updateLayoutMode() {
+            const mode = UI.selLayoutMode.value;
+            const wrapper = UI.layoutWrapper;
+            const overview = UI.cardOverview;
+            const scrollContainer = UI.chartsScrollContainer;
+            const steps = UI.cardSteps;
+            const bb = UI.cardBB;
+            const chartWrapper = document.getElementById('overviewChartWrapper');
+
+            // Handle hidden state if no data
+            if (State.rawPoints.length === 0) {
+                overview.classList.add('hidden');
+                overview.classList.remove('flex');
+                steps.classList.add('hidden');
+                bb.classList.add('hidden');
+                return;
+            } else {
+                overview.classList.remove('hidden');
+                overview.classList.add('flex');
+                steps.classList.remove('hidden');
+                bb.classList.remove('hidden');
+            }
+
+            // Reset base layout classes and clear any manually dragged widths/heights
+            overview.style.width = '';
+            overview.style.height = '';
+            
+            // Apply standard resets
+            overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-all duration-300 z-30 overflow-hidden shrink-0';
+            scrollContainer.className = 'flex flex-col gap-6 transition-all duration-300';
+            steps.className = 'grid gap-6 chart-controls transition-all duration-300';
+            bb.className = 'grid gap-6 chart-controls transition-all duration-300';
+            
+            // Give wrapper flex-1 and min-h-0 to appropriately consume height and allow inner scrolling
+            wrapper.className = 'flex w-full relative min-h-0 flex-1'; 
+            
+            // Apply mode-specific layouts
+            if (mode === 'grid') {
+                wrapper.classList.add('flex-col', 'gap-6', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
+                overview.classList.add('w-full', 'min-h-[400px]', 'resize-y');
+                scrollContainer.classList.add('w-full');
+                steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
+                bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
+                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+            } else if (mode === 'full') {
+                wrapper.classList.add('flex-col', 'gap-6', 'overflow-y-auto', 'custom-scrollbar', 'pr-2');
+                overview.classList.add('w-full', 'min-h-[60vh]', 'resize-y');
+                scrollContainer.classList.add('w-full');
+                steps.classList.add('grid-cols-1');
+                bb.classList.add('grid-cols-1');
+                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+            } else if (mode === 'split') {
+                // Wrapper prevents overall page scroll, manages Split
+                wrapper.classList.add('flex-col', 'xl:flex-row', 'gap-6', 'overflow-hidden');
+                // The 3D Overview occupies left half, fixed and resizable
+                overview.classList.add('w-full', 'xl:w-1/2', 'h-[40vh]', 'xl:h-full', 'resize-y', 'xl:resize-x');
+                // The Charts scroll container is exclusively given scroll permissions
+                scrollContainer.classList.add('w-full', 'xl:flex-1', 'h-full', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-4');
+                steps.classList.add('grid-cols-1');
+                bb.classList.add('grid-cols-1');
+                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+            } else if (mode === 'pinned-top') {
+                // Wrapper prevents overall page scroll, manages Top/Bottom
+                wrapper.classList.add('flex-col', 'gap-6', 'overflow-hidden');
+                // The 3D Overview occupies the top half, fixed and resizable
+                overview.classList.add('w-full', 'h-[45vh]', 'resize-y');
+                // The Charts scroll container flows underneath
+                scrollContainer.classList.add('w-full', 'flex-1', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-4');
+                steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
+                bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
+                chartWrapper.className = 'relative w-full h-full flex-1 mt-2';
+            }
+            
+            // Force Plotly to recalculate bounds immediately and again after transition
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
+            setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 150);
+            setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 300);
+        }
+        
+        // Dark Mode Logic
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            updateAllChartsTheme();
+        }
+
+        function getThemeLayout() {
+            const isDark = document.documentElement.classList.contains('dark');
+            return {
+                paper_bgcolor: isDark ? '#1e293b' : '#ffffff', // slate-800 / white
+                plot_bgcolor: isDark ? '#0f172a' : '#f8fafc',  // slate-900 / slate-50
+                fontColor: isDark ? '#cbd5e1' : '#334155',     // slate-300 / slate-700
+                gridColor: isDark ? '#334155' : '#e2e8f0',     // slate-700 / slate-200
+                zeroLineColor: isDark ? '#475569' : '#cbd5e1'  // slate-600 / slate-300
+            };
+        }
+
+        function updateAllChartsTheme() {
+            const theme = getThemeLayout();
+            const layoutUpdate = {
+                paper_bgcolor: theme.paper_bgcolor,
+                plot_bgcolor: theme.plot_bgcolor,
+                'font.color': theme.fontColor,
+                'xaxis.gridcolor': theme.gridColor,
+                'yaxis.gridcolor': theme.gridColor,
+                'xaxis.zerolinecolor': theme.zeroLineColor,
+                'yaxis.zerolinecolor': theme.zeroLineColor
+            };
+            
+            // Apply to all valid plot IDs
+            const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
+            plots.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.layout) {
+                    // For 3D scene grid lines
+                    if (el.layout.scene) {
+                        const sceneUpdate = {
+                            'scene.xaxis.gridcolor': theme.gridColor,
+                            'scene.yaxis.gridcolor': theme.gridColor,
+                            'scene.zaxis.gridcolor': theme.gridColor,
+                            'scene.xaxis.backgroundcolor': theme.plot_bgcolor,
+                            'scene.yaxis.backgroundcolor': theme.plot_bgcolor,
+                            'scene.zaxis.backgroundcolor': theme.plot_bgcolor
+                        };
+                        Plotly.relayout(id, { ...layoutUpdate, ...sceneUpdate });
+                    } else {
+                        Plotly.relayout(id, layoutUpdate);
+                    }
+                }
+            });
+
+            document.querySelectorAll('[id^="dimChart_"]').forEach(chart => {
+                if (chart.layout) Plotly.relayout(chart.id, layoutUpdate);
+            });
+        }
 
         function showNotification(msg, type = 'info') {
             let toast = document.getElementById('toastNotification');
@@ -485,7 +712,7 @@
                 toast.className = 'fixed top-4 right-4 z-50 transition-all pointer-events-none flex flex-col items-end gap-2';
                 document.body.appendChild(toast);
             }
-            const colorClass = type === 'error' ? 'bg-red-600 text-white' : type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-white';
+            const colorClass = type === 'error' ? 'bg-red-600 text-white' : type === 'success' ? 'bg-emerald-600 text-white' : 'bg-slate-800 dark:bg-slate-200 dark:text-slate-900 text-white';
             const el = document.createElement('div');
             el.className = `px-4 py-2.5 rounded-lg shadow-lg text-xs font-semibold transition-all flex items-center gap-2 ${colorClass}`;
             el.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i> <span>${msg}</span>`;
@@ -501,9 +728,13 @@
             if (isEqualAxes) {
                 UI.btnEqualAxes.classList.replace('bg-slate-200', 'bg-blue-100');
                 UI.btnEqualAxes.classList.replace('text-slate-700', 'text-blue-700');
+                UI.btnEqualAxes.classList.replace('dark:bg-slate-600', 'dark:bg-blue-900/50');
+                UI.btnEqualAxes.classList.replace('dark:text-slate-200', 'dark:text-blue-300');
             } else {
                 UI.btnEqualAxes.classList.replace('bg-blue-100', 'bg-slate-200');
                 UI.btnEqualAxes.classList.replace('text-blue-700', 'text-slate-700');
+                UI.btnEqualAxes.classList.replace('dark:bg-blue-900/50', 'dark:bg-slate-600');
+                UI.btnEqualAxes.classList.replace('dark:text-blue-300', 'dark:text-slate-200');
             }
             renderOverviewPlot();
         }
@@ -549,6 +780,25 @@
                 metric.value = currentMetricVal;
             }
         }
+
+        // Dropdown interactions for fails filter
+        window.toggleFailFilter = function(metricId, isChecked) {
+            if (isChecked) State.activeFailFilters.add(metricId);
+            else State.activeFailFilters.delete(metricId);
+            update3DOverview();
+        };
+
+        document.addEventListener('click', (e) => {
+            const btn = document.getElementById('btnFailFilter');
+            const dp = document.getElementById('dropdownFailFilter');
+            if (btn && dp) {
+                if (btn.contains(e.target)) {
+                    dp.classList.toggle('hidden');
+                } else if (!dp.contains(e.target) && !e.target.closest('#dropdownFailFilter')) {
+                    dp.classList.add('hidden');
+                }
+            }
+        });
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -782,10 +1032,9 @@
             UI.welcomeScreen.classList.add('hidden');
             UI.summaryPanel.classList.remove('hidden');
             UI.exportPanel.classList.remove('hidden');
-            UI.cardOverview.classList.remove('hidden');
-            UI.cardSteps.classList.remove('hidden');
-            UI.cardBB.classList.remove('hidden');
             UI.cardDimensions.classList.remove('hidden');
+
+            updateLayoutMode(); 
 
             UI.statTotalPoints.innerText = State.rawPoints.length;
             UI.statApertures.innerText = State.apertures.length;
@@ -821,7 +1070,7 @@
             return dataArr.map(v => (v !== null && v >= min && v <= max) ? v : null);
         }
 
-        function getToleranceShapes(nomVal, tolVal) {
+        function getToleranceShapes(nomVal, tol1Val, tol2Val) {
             const shapes = [];
             if (!isNaN(nomVal)) {
                 shapes.push({
@@ -829,11 +1078,24 @@
                     x0: 0, x1: 1, xref: 'paper', yref: 'y',
                     line: { color: '#22c55e', width: 2, dash: 'dot' } 
                 });
-                if (!isNaN(tolVal) && tolVal > 0) {
+                
+                let tVals = [tol1Val, tol2Val].filter(t => !isNaN(t) && t > 0).sort((a,b) => a-b);
+                
+                if (tVals.length > 0) {
+                    // Inner tolerance
                     shapes.push({
-                        type: 'rect', y0: nomVal - tolVal, y1: nomVal + tolVal,
+                        type: 'rect', y0: nomVal - tVals[0], y1: nomVal + tVals[0],
                         x0: 0, x1: 1, xref: 'paper', yref: 'y',
                         fillcolor: '#22c55e', opacity: 0.15, line: { width: 0 },
+                        layer: 'below' 
+                    });
+                }
+                if (tVals.length > 1 && tVals[1] > tVals[0]) {
+                    // Outer tolerance
+                    shapes.push({
+                        type: 'rect', y0: nomVal - tVals[1], y1: nomVal + tVals[1],
+                        x0: 0, x1: 1, xref: 'paper', yref: 'y',
+                        fillcolor: '#f59e0b', opacity: 0.15, line: { width: 0 },
                         layer: 'below' 
                     });
                 }
@@ -870,48 +1132,66 @@
             Plotly.relayout(plotId, update);
         }
 
-        function applyTolerances(plotId, nomInputId, tolInputId) {
-            const nomVal = parseFloat(document.getElementById(nomInputId).value);
-            const tolVal = parseFloat(document.getElementById(tolInputId).value);
-            Plotly.relayout(plotId, { shapes: getToleranceShapes(nomVal, tolVal) });
-        }
-
-        function evaluateTolerances() {
-            State.outOfTolApertures.clear();
+        function updateMetricStats(data, nomId, tol1Id, tol2Id, metricId, metricName, unit) {
+            State.metricFails[metricId] = { warn: new Set(), critical: new Set() };
+            const nom = parseFloat(document.getElementById(nomId)?.value);
+            const t1 = parseFloat(document.getElementById(tol1Id)?.value);
+            const t2 = parseFloat(document.getElementById(tol2Id)?.value);
             
-            const checkTol = (val, nomId, tolId, apIndex) => {
-                if (val === null || val === undefined) return;
-                const nomEl = document.getElementById(nomId);
-                const tolEl = document.getElementById(tolId);
-                if (!nomEl || !tolEl) return;
-                
-                const nom = parseFloat(nomEl.value);
-                const tol = parseFloat(tolEl.value);
-                
-                if (!isNaN(nom) && !isNaN(tol) && tol > 0) {
-                    if (Math.abs(val - nom) > tol) {
-                        State.outOfTolApertures.add(apIndex);
-                    }
+            let tVals = [t1, t2].filter(t => !isNaN(t) && t > 0).sort((a,b) => a-b);
+            let hasTol = !isNaN(nom) && tVals.length > 0;
+            
+            let fails1 = 0, fails2 = 0;
+            let totalValid = data.filter(d => d !== null && d !== undefined).length;
+            
+            if (hasTol) {
+                if (!State.knownMetrics.has(metricId)) {
+                    State.activeFailFilters.add(metricId);
+                    State.knownMetrics.add(metricId);
                 }
-            };
-
-            const xFilt = getFilteredData(State.xSteps, 'fMinStepX', 'fMaxStepX');
-            const yFilt = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
-            const angFilt = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
-            const wFilt = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
-            const hFilt = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
-
-            for (let i = 0; i < State.apertures.length; i++) {
-                checkTol(xFilt[i], 'inpNomStepX', 'inpTolStepX', i);
-                checkTol(yFilt[i], 'inpNomStepY', 'inpTolStepY', i);
-                checkTol(angFilt[i], 'inpNomAngle', 'inpTolAngle', i);
-                checkTol(wFilt[i], 'inpNomBBX', 'inpTolBBX', i);
-                checkTol(hFilt[i], 'inpNomBBY', 'inpTolBBY', i);
                 
-                for (const chartId in State.customDims) {
-                    const idx = chartId.split('_')[1];
-                    const dimFilt = getFilteredData(State.customDims[chartId].values, `fMinDim_${idx}`, `fMaxDim_${idx}`);
-                    checkTol(dimFilt[i], `nomDim_${idx}`, `tolDim_${idx}`, i);
+                let maxT = Math.max(...[t1, t2].filter(t => !isNaN(t)));
+                let minT = Math.min(...[t1, t2].filter(t => !isNaN(t)));
+                
+                data.forEach((val, i) => {
+                    if (val !== null && val !== undefined) {
+                        let dev = Math.abs(val - nom);
+                        if (!isNaN(t1) && dev > t1) fails1++;
+                        if (!isNaN(t2) && dev > t2) fails2++;
+
+                        if (dev > maxT) State.metricFails[metricId].critical.add(i);
+                        else if (dev > minT) State.metricFails[metricId].warn.add(i);
+                    }
+                });
+            } else {
+                State.activeFailFilters.delete(metricId);
+                State.knownMetrics.delete(metricId);
+            }
+            
+            const avg = calcAvg(data);
+            State.metricsData[metricId] = { 
+                id: metricId, name: metricName, avg, nom, 
+                t1: isNaN(t1)? null : t1, 
+                t2: isNaN(t2)? null : t2, 
+                hasTol, fails1, fails2, totalValid, unit 
+            };
+            
+            const statsEl = document.getElementById(`stats_${metricId}`);
+            if (statsEl) {
+                let txt = `Avg: ${avg.toFixed(3)}${unit}`;
+                if (hasTol) {
+                    if (!isNaN(t1)) txt += ` | F1: ${fails1}/${totalValid}`;
+                    if (!isNaN(t2)) txt += ` | F2: ${fails2}/${totalValid}`;
+                }
+                statsEl.innerText = txt;
+                
+                if (hasTol && (fails1 > 0 || fails2 > 0)) {
+                    statsEl.classList.add(fails2 > 0 ? 'text-red-600' : 'text-amber-600', fails2 > 0 ? 'bg-red-50' : 'bg-amber-50', fails2 > 0 ? 'border-red-200' : 'border-amber-200');
+                    statsEl.classList.add(fails2 > 0 ? 'dark:text-red-400' : 'dark:text-amber-400', fails2 > 0 ? 'dark:bg-red-900/30' : 'dark:bg-amber-900/30', fails2 > 0 ? 'dark:border-red-800' : 'dark:border-amber-800');
+                    statsEl.classList.remove('text-slate-600', 'bg-slate-100/80', 'border-slate-200', 'dark:text-slate-300', 'dark:bg-slate-800/80', 'dark:border-slate-700');
+                } else {
+                    statsEl.classList.add('text-slate-600', 'bg-slate-100/80', 'border-slate-200', 'dark:text-slate-300', 'dark:bg-slate-800/80', 'dark:border-slate-700');
+                    statsEl.classList.remove('text-red-600', 'bg-red-50', 'border-red-200', 'text-amber-600', 'bg-amber-50', 'border-amber-200', 'dark:text-red-400', 'dark:bg-red-900/30', 'dark:border-red-800', 'dark:text-amber-400', 'dark:bg-amber-900/30', 'dark:border-amber-800');
                 }
             }
         }
@@ -923,25 +1203,66 @@
 
         function update3DOverview() {
             if (State.rawPoints.length === 0) return;
-            evaluateTolerances();
+            
+            const activeMetrics = Object.values(State.metricsData).filter(m => m.hasTol);
+            const container = document.getElementById('failFilterContainer');
+            const dropdown = document.getElementById('dropdownFailFilter');
+            
+            if (activeMetrics.length === 0 || !UI.chkHighlightTol.checked) {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                dropdown.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+                let html = '<div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide border-b border-slate-100 dark:border-slate-700 pb-1">Include Fails From:</div>';
+                activeMetrics.forEach(m => {
+                    const checked = State.activeFailFilters.has(m.id) ? 'checked' : '';
+                    html += `
+                        <label class="flex items-center gap-2 text-xs cursor-pointer mb-1.5 hover:bg-slate-50 dark:hover:bg-slate-700 p-1 rounded transition-colors dark:text-slate-200">
+                            <input type="checkbox" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600" value="${m.id}" ${checked} onchange="toggleFailFilter('${m.id}', this.checked)">
+                            <span class="truncate" title="${m.name}">${m.name}</span>
+                        </label>
+                    `;
+                });
+                dropdown.innerHTML = html;
+            }
+
+            State.outOfTolApertures = { warn: new Set(), critical: new Set() };
+            for (const mId in State.metricFails) {
+                if (State.activeFailFilters.has(mId)) {
+                    if (State.metricFails[mId].warn) {
+                        State.metricFails[mId].warn.forEach(apIdx => State.outOfTolApertures.warn.add(apIdx));
+                    }
+                    if (State.metricFails[mId].critical) {
+                        State.metricFails[mId].critical.forEach(apIdx => State.outOfTolApertures.critical.add(apIdx));
+                    }
+                }
+            }
+            
             renderOverviewPlot();
         }
 
         function renderOverviewPlot() {
             let plotX = [], plotY = [], plotZ = [], plotText = [], plotColors = [], plotTextArr = [];
             const baseColor = UI.inpMarkerColor.value || '#3b82f6';
-            const failColor = '#ef4444';
-            const centroidColor = UI.inpCentroidColor.value || '#ef4444';
+            const criticalColor = '#ef4444'; // Red
+            const warnColor = '#f59e0b'; // Amber
+            const centroidColor = UI.inpCentroidColor.value || '#94a3b8';
             const highlightFailures = UI.chkHighlightTol.checked;
             const showLabels = UI.chkShowLabels.checked;
             const markerSize = parseInt(UI.inpMarkerSize.value) || 2;
             const centroidSize = parseInt(UI.inpCentroidSize.value) || 2;
             const view = State.overviewView || 'iso';
             const is2D = view !== 'iso';
+            const theme = getThemeLayout();
 
             State.apertures.forEach((ap, apIdx) => {
-                const isFailing = highlightFailures && State.outOfTolApertures.has(apIdx);
-                const color = isFailing ? failColor : baseColor;
+                let color = baseColor;
+                if (highlightFailures) {
+                    if (State.outOfTolApertures.critical.has(apIdx)) color = criticalColor;
+                    else if (State.outOfTolApertures.warn.has(apIdx)) color = warnColor;
+                }
                 ap.forEach((pt, ptIdx) => {
                     plotX.push(pt.x); plotY.push(pt.y); plotZ.push(pt.z);
                     plotText.push(`Aperture: ${apIdx}<br>Point: ${ptIdx}`);
@@ -953,9 +1274,11 @@
             let tracePoints = {};
             let traceCentroids = {};
             let layout = {
-                legend: { x: 0, y: 1 }, 
-                paper_bgcolor: '#ffffff', 
-                plot_bgcolor: '#ffffff'
+                legend: { x: 0, y: 1, font: { color: theme.fontColor } }, 
+                paper_bgcolor: theme.paper_bgcolor, 
+                plot_bgcolor: theme.plot_bgcolor,
+                font: { color: theme.fontColor },
+                autosize: true
             };
 
             if (is2D) {
@@ -978,7 +1301,7 @@
                 tracePoints = {
                     x: px, y: py, text: plotTextArr, hovertext: plotText,
                     textposition: 'top center', mode: showLabels ? 'markers+text' : 'markers',
-                    textfont: { size: 12, color: '#334155' },
+                    textfont: { size: 12, color: theme.fontColor },
                     hovertemplate: `<b>%{hovertext}</b><br>${xTitle}: %{x:.4f}<br>${yTitle}: %{y:.4f}<extra></extra>`,
                     marker: { size: markerSize * 2, color: plotColors, opacity: 0.8 },
                     type: 'scattergl', name: 'Measurement Points'
@@ -993,8 +1316,8 @@
                 };
 
                 layout.margin = { l: 40, r: 20, b: 40, t: 20 };
-                layout.xaxis = { title: xTitle };
-                layout.yaxis = { title: yTitle };
+                layout.xaxis = { title: xTitle, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor };
+                layout.yaxis = { title: yTitle, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor };
                 
                 if (isEqualAxes) {
                     layout.yaxis.scaleanchor = "x";
@@ -1004,7 +1327,7 @@
                 tracePoints = {
                     x: plotX, y: plotY, z: plotZ, text: plotTextArr, hovertext: plotText,
                     textposition: 'top center', mode: showLabels ? 'markers+text' : 'markers',
-                    textfont: { size: 12, color: '#334155' },
+                    textfont: { size: 12, color: theme.fontColor },
                     hovertemplate: '<b>%{hovertext}</b><br>X: %{x:.4f}<br>Y: %{y:.4f}<br>Z: %{z:.4f}<extra></extra>',
                     marker: { size: markerSize, color: plotColors, opacity: 0.8 },
                     type: 'scatter3d', name: 'Measurement Points'
@@ -1020,7 +1343,9 @@
 
                 layout.margin = { l: 0, r: 0, b: 0, t: 0 };
                 layout.scene = { 
-                    xaxis: { title: 'X' }, yaxis: { title: 'Y' }, zaxis: { title: 'Z' },
+                    xaxis: { title: 'X', gridcolor: theme.gridColor, backgroundcolor: theme.plot_bgcolor }, 
+                    yaxis: { title: 'Y', gridcolor: theme.gridColor, backgroundcolor: theme.plot_bgcolor }, 
+                    zaxis: { title: 'Z', gridcolor: theme.gridColor, backgroundcolor: theme.plot_bgcolor },
                     aspectmode: isEqualAxes ? 'data' : 'auto',
                     camera: { eye: { x: 1.2, y: 1.2, z: 1.2 } }
                 };
@@ -1036,16 +1361,21 @@
             const yData = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
             const angleData = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
 
-            const avgX = calcAvg(xData);
-            const avgY = calcAvg(yData);
-            const avgAngle = calcAvg(angleData);
+            updateMetricStats(xData, 'inpNomStepX', 'inpTol1StepX', 'inpTol2StepX', 'stepX', 'X-Lattice', 'mm');
+            updateMetricStats(yData, 'inpNomStepY', 'inpTol1StepY', 'inpTol2StepY', 'stepY', 'Y-Lattice', 'mm');
+            updateMetricStats(angleData, 'inpNomAngle', 'inpTol1Angle', 'inpTol2Angle', 'angle', 'Lattice Angle', '°');
 
+            const avgX = State.metricsData['stepX'].avg;
+            const avgY = State.metricsData['stepY'].avg;
+            const avgAngle = State.metricsData['angle'].avg;
+            const theme = getThemeLayout();
             const hoverTxt = State.targetNeighbors.map((val, i) => val !== null ? `Ap ${i} → Ap ${val}` : '');
 
             const layoutBase = {
                 margin: { l: 50, r: 20, b: 70, t: 20 },
-                xaxis: { title: 'Aperture Index Map', tickangle: 45, type: 'category' },
-                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc',
+                xaxis: { title: 'Aperture Index Map', tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor,
+                font: { color: theme.fontColor },
                 showlegend: false
             };
 
@@ -1057,8 +1387,8 @@
                 },
                 getAvgTrace(xLabels, avgX)
             ], {
-                ...layoutBase, yaxis: { title: '[mm]' },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTolStepX').value))
+                ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTol1StepX').value), parseFloat(document.getElementById('inpTol2StepX').value))
             }, {responsive: true});
 
             Plotly.react('plotStepY', [
@@ -1069,8 +1399,8 @@
                 },
                 getAvgTrace(xLabels, avgY)
             ], {
-                ...layoutBase, yaxis: { title: '[mm]' },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTolStepY').value))
+                ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTol1StepY').value), parseFloat(document.getElementById('inpTol2StepY').value))
             }, {responsive: true});
 
             Plotly.react('plotAngle', [
@@ -1081,8 +1411,8 @@
                 },
                 getAvgTrace(xLabels, avgAngle)
             ], {
-                ...layoutBase, yaxis: { title: 'Angle [deg]' },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTolAngle').value))
+                ...layoutBase, yaxis: { title: 'Angle [deg]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTol1Angle').value), parseFloat(document.getElementById('inpTol2Angle').value))
             }, {responsive: true});
 
             update3DOverview();
@@ -1093,14 +1423,19 @@
             const wData = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
             const hData = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
 
-            const avgW = calcAvg(wData);
-            const avgH = calcAvg(hData);
+            updateMetricStats(wData, 'inpNomBBX', 'inpTol1BBX', 'inpTol2BBX', 'bbX', 'Aperture Width', 'mm');
+            updateMetricStats(hData, 'inpNomBBY', 'inpTol1BBY', 'inpTol2BBY', 'bbY', 'Aperture Height', 'mm');
+
+            const avgW = State.metricsData['bbX'].avg;
+            const avgH = State.metricsData['bbY'].avg;
+            const theme = getThemeLayout();
 
             const layoutBase = {
                 margin: { l: 50, r: 20, b: 70, t: 20 },
-                xaxis: { title: 'Aperture Index', tickangle: 45, type: 'category' },
-                yaxis: { title: '[mm]' },
-                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc',
+                xaxis: { title: 'Aperture Index', tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor,
+                font: { color: theme.fontColor },
                 showlegend: false
             };
 
@@ -1112,7 +1447,7 @@
                 getAvgTrace(xLabels, avgW)
             ], {
                 ...layoutBase,
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBX').value), parseFloat(document.getElementById('inpTolBBX').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBX').value), parseFloat(document.getElementById('inpTol1BBX').value), parseFloat(document.getElementById('inpTol2BBX').value))
             }, {responsive: true});
 
             Plotly.react('plotBBY', [
@@ -1123,7 +1458,7 @@
                 getAvgTrace(xLabels, avgH)
             ], {
                 ...layoutBase,
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTolBBY').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTol1BBY').value), parseFloat(document.getElementById('inpTol2BBY').value))
             }, {responsive: true});
             
             update3DOverview();
@@ -1160,9 +1495,9 @@
             }
 
             const filteredDims = getFilteredData(dimensionsRaw, `fMinDim_${idx}`, `fMaxDim_${idx}`);
-            const avg = calcAvg(filteredDims);
-
-            document.getElementById(`avgDim_${idx}`).innerText = `Avg: ${avg.toFixed(1)}${unit}`;
+            updateMetricStats(filteredDims, `nomDim_${idx}`, `tol1Dim_${idx}`, `tol2Dim_${idx}`, chartDivId, chartData.title, unit);
+            const avg = State.metricsData[chartDivId].avg;
+            const theme = getThemeLayout();
 
             Plotly.react(chartDivId, [
                 {
@@ -1176,10 +1511,10 @@
                 }
             ], {
                 margin: { l: 50, r: 20, b: 70, t: 10 },
-                xaxis: { title: xAxisTitle, tickangle: 45, type: 'category' },
-                yaxis: { title: yAxisTitle, tickformat: '.1f' },
-                paper_bgcolor: '#ffffff', plot_bgcolor: '#f8fafc', showlegend: false,
-                shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tolDim_${idx}`).value))
+                xaxis: { title: xAxisTitle, tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                yaxis: { title: yAxisTitle, tickformat: '.1f', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor, font: { color: theme.fontColor }, showlegend: false,
+                shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tol1Dim_${idx}`).value), parseFloat(document.getElementById(`tol2Dim_${idx}`).value))
             }, {responsive: true});
 
             update3DOverview();
@@ -1218,8 +1553,18 @@
                 const parts = mode.split('_');
                 const n = parseInt(parts[parts.length - 1], 10);
                 const rankName = n === 1 ? '1st' : (n === 2 ? '2nd' : '3rd');
+                
+                let dirType = 'lattice';
+                if (mode.includes('_x_')) dirType = 'x';
+                if (mode.includes('_y_')) dirType = 'y';
+
                 let metricLabel = metric === 'dx' ? 'X Distance' : (metric === 'dy' ? 'Y Distance' : (metric === 'angle' ? 'Lattice Angle' : 'Absolute Distance'));
-                title = `${rankName} Neighbor Along Lattice: ${metricLabel}`;
+                
+                let dirLabel = 'Lattice';
+                if (dirType === 'x') dirLabel = 'X';
+                if (dirType === 'y') dirLabel = 'Y';
+
+                title = `${rankName} Neighbor Along ${dirLabel}: ${metricLabel}`;
                 
                 UI.emptyDimensionMsg.classList.add('hidden');
 
@@ -1239,29 +1584,39 @@
                         let dist2D = Math.sqrt(dx * dx + dy * dy);
                         if (dist2D < 1e-5) continue;
                         
-                        // Directional projection along the lattice vector
-                        let proj = (dx * latVx + dy * latVy) / latMag;
-                        if (proj <= 0) continue; // Keep only forward progression along the lattice line
+                        let proj, perp, angleDev;
+
+                        if (dirType === 'lattice') {
+                            proj = (dx * latVx + dy * latVy) / latMag;
+                            perp = Math.abs(dx * latVy - dy * latVx) / latMag;
+                        } else if (dirType === 'x') {
+                            let signX = (latVx >= 0 || Math.abs(latVx) < 1e-9) ? 1 : -1;
+                            proj = dx * signX;
+                            perp = Math.abs(dy);
+                        } else if (dirType === 'y') {
+                            let signY = (latVy >= 0 || Math.abs(latVy) < 1e-9) ? 1 : -1;
+                            proj = dy * signY;
+                            perp = Math.abs(dx);
+                        }
+
+                        if (proj <= 0) continue; 
                         
-                        // Perpendicular offset from lattice line
-                        let perp = Math.abs(dx * latVy - dy * latVx) / latMag;
-                        let angleDev = Math.atan2(perp, proj); // deviation angle
+                        angleDev = Math.atan2(perp, proj); 
                         
-                        // Match apertures within a 30° cone along the lattice vector direction
                         if (angleDev <= (30 * Math.PI / 180)) {
                             candidates.push({
-                                index: j,
-                                pt: cj,
-                                proj: proj,
+                                index: j, pt: cj, proj: proj, perp: perp,
                                 dist3D: Math.sqrt(dx * dx + dy * dy + dz * dz),
-                                dx: Math.abs(dx),
-                                dy: Math.abs(dy)
+                                dx: Math.abs(dx), dy: Math.abs(dy)
                             });
                         }
                     }
 
-                    // Sort candidates by progressive projection along the lattice direction
-                    candidates.sort((a, b) => a.proj - b.proj);
+                    if (dirType === 'x' || dirType === 'y') {
+                        candidates.sort((a, b) => (a.proj + a.perp * 10) - (b.proj + b.perp * 10));
+                    } else {
+                        candidates.sort((a, b) => a.proj - b.proj);
+                    }
 
                     if (candidates.length >= n) {
                         let target = candidates[n - 1];
@@ -1311,31 +1666,36 @@
             State.customDims[chartDivId] = { values: dimensions, labels: chartLabels, xAxisTitle: xAxisTitle, metric: metric, title: title };
 
             const wrapper = document.createElement('div');
-            wrapper.className = 'border border-slate-200 rounded-md p-4 bg-white relative chart-controls flex flex-col';
+            wrapper.className = 'border border-slate-200 dark:border-slate-700 rounded-md p-4 bg-white dark:bg-slate-800 relative chart-controls flex flex-col';
             wrapper.innerHTML = `
-                <button class="absolute top-2 right-2 text-slate-400 hover:text-red-500 transition-colors px-2 py-1" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
+                <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1" onclick="deleteCustomChart('${chartDivId}', this.parentElement)">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
                 <div class="flex flex-col xl:flex-row xl:flex-wrap xl:justify-between items-start mb-2 pr-8 gap-3">
                     <div class="flex-1 break-words">
-                        <h4 class="font-medium text-slate-700 text-sm">${title}</h4>
-                        <p class="text-xs text-slate-500" id="avgDim_${idx}">Avg: 0.0</p>
+                        <h4 class="font-medium text-slate-700 dark:text-slate-200 text-sm">${title}</h4>
+                        <div id="stats_${chartDivId}" class="text-[11px] font-medium text-slate-600 dark:text-slate-400 mt-1.5 bg-slate-100/80 dark:bg-slate-700/50 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 transition-colors">Avg: 0.0</div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200 shrink-0">
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
-                            <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 border-yellow-300" oninput="renderCustomDimChart(${idx})">
+                    <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/30 p-1.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                        <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                            <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
+                            <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})">
                         </div>
-                        <div class="flex items-center gap-1 border-r border-slate-300 pr-2">
-                            <span class="text-[9px] text-slate-500 uppercase text-center leading-tight">Scale</span>
-                            <input type="number" id="minDim_${idx}" placeholder="Min" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
-                            <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                        <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
+                            <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Scale</span>
+                            <input type="number" id="minDim_${idx}" placeholder="Min" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
+                            <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
                         </div>
                         <div class="flex items-center gap-1">
-                            <input type="number" id="nomDim_${idx}" placeholder="Nominal" step="any" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="nomDim_${idx}" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
                             <span class="text-xs text-slate-400">&plusmn;</span>
-                            <input type="number" id="tolDim_${idx}" placeholder="Tol" step="any" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="tol1Dim_${idx}" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <span class="text-[10px] text-slate-400">/</span>
+                            <input type="number" id="tol2Dim_${idx}" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                        </div>
+                        <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
+                            <button onclick="downloadPlot('${chartDivId}', '${title.replace(/['"]/g, '\\"')}')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1368,6 +1728,11 @@
 
         function deleteCustomChart(chartId, element) {
             delete State.customDims[chartId];
+            delete State.metricFails[chartId];
+            delete State.metricsData[chartId];
+            State.activeFailFilters.delete(chartId);
+            State.knownMetrics.delete(chartId);
+            
             element.remove();
             if (UI.dynamicChartsContainer.querySelectorAll('.border').length === 0) UI.emptyDimensionMsg.classList.remove('hidden');
             update3DOverview();
@@ -1380,22 +1745,8 @@
             
             if (!el || !el.layout) return;
 
-            const origTitle = el.layout.title;
-            const origMargin = el.layout.margin;
-
-            await Plotly.relayout(plotId, { 
-                'title.text': chartTitle,
-                'title.font.size': 18,
-                margin: { l: 60, r: 40, b: 80, t: 60 }
-            });
-
             const safeFilename = `${partNum}_${serialNum}_${chartTitle.replace(/[^a-zA-Z0-9]/g, '_')}`;
-            await Plotly.downloadImage(plotId, { format: 'png', width: 1200, height: 800, filename: safeFilename });
-
-            await Plotly.relayout(plotId, { 
-                title: origTitle,
-                margin: origMargin
-            });
+            await Plotly.downloadImage(plotId, { format: 'png', filename: safeFilename });
         }
 
         async function downloadPDFReport() {
@@ -1413,39 +1764,116 @@
             try {
                 const doc = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
                 const margin = 15;
                 const printWidth = pageWidth - (margin * 2);
-                let cursorY = margin;
+                let cursorY = 0;
 
-                doc.setFontSize(18);
+                // --- HEADER SECTION ---
+                doc.setFillColor(15, 23, 42); 
+                doc.rect(0, 0, pageWidth, 35, 'F');
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(22);
                 doc.setFont("helvetica", "bold");
-                doc.text("Aperture Tolerance Report", margin, cursorY);
-                cursorY += 8;
-
-                doc.setFontSize(11);
+                doc.text("AF ENGINEERING TOOLS", margin, 18);
+                
+                doc.setFontSize(12);
                 doc.setFont("helvetica", "normal");
-                doc.text(`Part Number: ${document.getElementById('inpPartNum').value || "N/A"}`, margin, cursorY);
+                doc.setTextColor(148, 163, 184); // slate-400
+                doc.text("APERTURE TOLERANCE REPORT", margin, 26);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - margin, 20, { align: 'right' });
+                
+                cursorY = 45;
+
+                // --- METADATA SECTION ---
+                doc.setTextColor(15, 23, 42);
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.text("Part Information", margin, cursorY);
                 cursorY += 6;
-                doc.text(`Serial Number: ${document.getElementById('inpSerialNum').value || "N/A"}`, margin, cursorY);
+                
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(51, 65, 85);
+                const partNo = document.getElementById('inpPartNum').value || "N/A";
+                const serialNo = document.getElementById('inpSerialNum').value || "N/A";
+                doc.text(`Part Number: ${partNo}`, margin, cursorY);
+                doc.text(`Serial Number: ${serialNo}`, margin + 80, cursorY);
                 cursorY += 6;
                 
                 const comments = document.getElementById('inpComments')?.value;
                 if (comments) {
-                    const splitComments = doc.splitTextToSize(`Comments: ${comments}`, printWidth);
+                    doc.setFont("helvetica", "italic");
+                    const splitComments = doc.splitTextToSize(`Notes: ${comments}`, printWidth);
                     doc.text(splitComments, margin, cursorY);
-                    cursorY += (6 * splitComments.length);
+                    cursorY += (5 * splitComments.length);
+                }
+                
+                cursorY += 4;
+                doc.setDrawColor(226, 232, 240); // slate-200
+                doc.line(margin, cursorY, pageWidth - margin, cursorY);
+                cursorY += 8;
+
+                // --- SUMMARY TABLE ---
+                doc.setFontSize(14);
+                doc.setFont("helvetica", "bold");
+                doc.setTextColor(15, 23, 42); 
+                doc.text("Tolerance Summary", margin, cursorY);
+                cursorY += 4;
+
+                const tableData = [];
+                Object.values(State.metricsData).forEach(m => {
+                    const hasT1 = m.t1 !== null;
+                    const hasT2 = m.t2 !== null;
+                    tableData.push([
+                        m.name,
+                        `${m.avg.toFixed(3)} ${m.unit}`,
+                        hasT1 ? `± ${m.t1}` : '-',
+                        hasT1 ? `${m.fails1} / ${m.totalValid}` : '-',
+                        hasT2 ? `± ${m.t2}` : '-',
+                        hasT2 ? `${m.fails2} / ${m.totalValid}` : '-'
+                    ]);
+                });
+
+                if (tableData.length > 0) {
+                    doc.autoTable({
+                        startY: cursorY,
+                        head: [['Metric', 'Average', 'Tol 1', 'Fails 1', 'Tol 2', 'Fails 2']],
+                        body: tableData,
+                        theme: 'grid',
+                        headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'center' },
+                        columnStyles: { 
+                            0: { fontStyle: 'bold' },
+                            1: { halign: 'center' },
+                            2: { halign: 'center' },
+                            3: { halign: 'center', textColor: [245, 158, 11] }, // amber-500
+                            4: { halign: 'center' },
+                            5: { halign: 'center', textColor: [239, 68, 68] }  // red-500
+                        },
+                        alternateRowStyles: { fillColor: [248, 250, 252] },
+                        styles: { fontSize: 9, cellPadding: 4, textColor: [51, 65, 85] },
+                        margin: { left: margin, right: margin }
+                    });
+                    cursorY = doc.lastAutoTable.finalY + 15;
+                } else {
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "italic");
+                    doc.text("No tolerance metrics defined.", margin, cursorY + 5);
+                    cursorY += 15;
                 }
 
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, margin, cursorY);
-                cursorY += 10;
-
+                // --- CHARTS EXPORT ---
                 const plotsToExport = [
                     { id: 'plotOverview', title: '3D Array Overview', h: printWidth },
-                    { id: 'plotStepX', title: 'X-Lattice', h: 60 },
-                    { id: 'plotStepY', title: 'Y-Lattice', h: 60 },
-                    { id: 'plotAngle', title: 'Lattice Angle', h: 60 },
-                    { id: 'plotBBX', title: 'Aperture Widths', h: 60 },
-                    { id: 'plotBBY', title: 'Aperture Heights', h: 60 }
+                    { id: 'plotStepX', title: 'X-Lattice Stepping', h: 80 },
+                    { id: 'plotStepY', title: 'Y-Lattice Stepping', h: 80 },
+                    { id: 'plotAngle', title: 'Lattice Angle', h: 80 },
+                    { id: 'plotBBX', title: 'Aperture Widths', h: 80 },
+                    { id: 'plotBBY', title: 'Aperture Heights', h: 80 }
                 ];
                 
                 for(let i=1; i<=State.dimensionCharts; i++){
@@ -1454,7 +1882,7 @@
                     if (chartEl) {
                         const titleNode = chartEl.parentElement.querySelector('h4');
                         const realTitle = titleNode ? titleNode.innerText : `Custom Dimension ${i}`;
-                        plotsToExport.push({ id: chartDivId, title: realTitle, h: 60 });
+                        plotsToExport.push({ id: chartDivId, title: realTitle, h: 80 });
                     }
                 }
 
@@ -1462,34 +1890,79 @@
                     const plotEl = document.getElementById(p.id);
                     if (!plotEl) continue;
                     
-                    const origMargin = plotEl.layout.margin || { l: 50, r: 20, b: 70, t: 20 };
-                    const origTop = origMargin.t !== undefined ? origMargin.t : 20;
-                    
-                    await Plotly.relayout(plotEl, { margin: { l: 50, r: 20, b: 90, t: origTop } });
-                    
-                    const pxWidth = 1600; 
-                    const pxHeight = Math.round((p.h / printWidth) * pxWidth);
-                    
-                    const imgUrl = await Plotly.toImage(plotEl, { format: 'jpeg', width: pxWidth, height: pxHeight });
-                    
-                    await Plotly.relayout(plotEl, { margin: origMargin });
-                    
-                    if (cursorY + p.h + 20 > doc.internal.pageSize.getHeight() - margin) {
+                    if (cursorY + p.h + 25 > pageHeight - margin - 10) {
                         doc.addPage();
-                        cursorY = margin;
+                        cursorY = margin + 10;
                     }
                     
                     doc.setFontSize(14);
                     doc.setFont("helvetica", "bold");
+                    doc.setTextColor(30, 41, 59);
                     doc.text(p.title, margin, cursorY);
-                    cursorY += 8; 
+                    
+                    const relatedMetric = Object.values(State.metricsData).find(m => m.name === p.title || p.title.includes(m.name));
+                    if (relatedMetric) {
+                        let statText = `Avg: ${relatedMetric.avg.toFixed(3)}${relatedMetric.unit}`;
+                        if (relatedMetric.t1 !== null) statText += `   |   T1 (±${relatedMetric.t1}): ${relatedMetric.fails1}/${relatedMetric.totalValid} fails`;
+                        if (relatedMetric.t2 !== null) statText += `   |   T2 (±${relatedMetric.t2}): ${relatedMetric.fails2}/${relatedMetric.totalValid} fails`;
+                        doc.setFontSize(10);
+                        doc.setFont("helvetica", "normal");
+                        doc.setTextColor(100, 116, 139);
+                        doc.text(statText, margin, cursorY + 6);
+                    }
+                    cursorY += 10; 
+                    
+                    // Clone Layout & Increase scaling exclusively for the PDF rendering pass
+                    const exportLayout = JSON.parse(JSON.stringify(plotEl.layout || {}));
+                    
+                    const scaleFont = (ax) => {
+                        if(!ax) return;
+                        ax.title = ax.title || {};
+                        ax.title.font = { size: 30, color: '#334155' };
+                        ax.title.standoff = 40;
+                        ax.tickfont = { size: 24, color: '#475569' };
+                    };
+
+                    scaleFont(exportLayout.xaxis);
+                    scaleFont(exportLayout.yaxis);
+                    
+                    if(exportLayout.scene) {
+                        scaleFont(exportLayout.scene.xaxis);
+                        scaleFont(exportLayout.scene.yaxis);
+                        scaleFont(exportLayout.scene.zaxis);
+                    }
+
+                    exportLayout.margin = { l: 160, r: 50, b: 160, t: 20 };
+                    // Force a consistent white theme layout regardless of active browser Dark Mode
+                    exportLayout.paper_bgcolor = '#ffffff';
+                    exportLayout.plot_bgcolor = '#f8fafc';
+                    exportLayout.font = { ...exportLayout.font, color: '#334155' };
+                    if (exportLayout.legend) exportLayout.legend.font = { size: 20, color: '#334155' };
+
+                    const pxWidth = 2000; 
+                    const pxHeight = Math.round((p.h / printWidth) * pxWidth);
+                    
+                    // Render image detached from DOM to prevent visual flickering
+                    const imgUrl = await Plotly.toImage({data: plotEl.data, layout: exportLayout}, { format: 'jpeg', width: pxWidth, height: pxHeight });
                     
                     doc.addImage(imgUrl, 'JPEG', margin, cursorY, printWidth, p.h);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.rect(margin, cursorY, printWidth, p.h);
+                    
                     cursorY += p.h + 15; 
                 }
 
-                const fnPart = document.getElementById('inpPartNum').value ? document.getElementById('inpPartNum').value + '_' : '';
-                const fnSerial = document.getElementById('inpSerialNum').value ? document.getElementById('inpSerialNum').value + '_' : '';
+                // Append Pagination Footers
+                const pageCount = doc.internal.getNumberOfPages();
+                for(let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(9);
+                    doc.setTextColor(148, 163, 184); // slate-400
+                    doc.text(`AF Engineering Tools  |  Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                }
+
+                const fnPart = partNo !== "N/A" ? partNo + '_' : '';
+                const fnSerial = serialNo !== "N/A" ? serialNo + '_' : '';
                 doc.save(`${fnPart}${fnSerial}Analyzer_Report.pdf`);
                 showNotification("PDF Report generated successfully.", "success");
 
@@ -1502,17 +1975,29 @@
             }
         }
 
+        // Debounced ResizeObserver to optimize Plotly reflows while dragging the CSS resize handles
+        let resizeTimeout;
         const resizeObserver = new ResizeObserver(() => {
-            const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
-            plots.forEach(id => {
-                if (document.getElementById(id) && !UI.cardOverview.classList.contains('hidden')) {
-                    Plotly.Plots.resize(id);
-                }
-            });
-            document.querySelectorAll('[id^="dimChart_"]').forEach(chart => Plotly.Plots.resize(chart.id));
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
+                plots.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && el.layout && !UI.cardOverview.classList.contains('hidden')) {
+                        Plotly.Plots.resize(id);
+                    }
+                });
+                document.querySelectorAll('[id^="dimChart_"]').forEach(chart => {
+                    if (chart.layout) Plotly.Plots.resize(chart.id);
+                });
+            }, 50); // 50ms debounce for responsive drag-resizing
         });
         
-        resizeObserver.observe(document.getElementById('mainContainer'));
+        // Only observe the specific layout wrappers instead of the entire scroll panel
+        resizeObserver.observe(document.getElementById('layoutWrapper'));
+        if (document.getElementById('cardOverview')) {
+            resizeObserver.observe(document.getElementById('cardOverview'));
+        }
 
     </script>
 </body>
