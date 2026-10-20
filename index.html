@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aperture Tolerance Analyzer - AF ENGINEERING TOOLS</title>
+    <title>Aperture Tolerance Analyzer - AF Engineering Tools</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -43,6 +43,7 @@
 </head>
 <body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
 
+    <!-- Sidebar Controls -->
     <aside id="appSidebar" class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 dark:border-slate-700 shrink-0 transition-all duration-300">
         <div class="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center transition-colors">
             <div>
@@ -50,7 +51,7 @@
                     <i class="fa-solid fa-layer-group text-blue-600 dark:text-blue-400"></i>
                     Aperture Tolerance Analyzer
                 </h1>
-                <p id="sidebarCompanyText" class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
             </div>
             <button id="btnThemeToggle" onclick="toggleTheme()" class="text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 p-2.5 rounded-full transition-colors focus:outline-none">
                 <i class="fa-solid fa-moon dark:hidden"></i>
@@ -79,6 +80,7 @@
                 </div>
             </div>
 
+            <!-- Data Source -->
             <div class="space-y-3">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">1. Data Source</h2>
                 <div>
@@ -96,6 +98,7 @@
                 </button>
             </div>
 
+            <!-- Configuration -->
             <div class="space-y-3">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">2. Configuration</h2>
                 <div>
@@ -165,6 +168,7 @@
             </button>
             
             <div class="flex items-center gap-3">
+                <button id="btnRestoreCharts" onclick="restoreDefaultCharts()" class="hidden text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mr-2"><i class="fa-solid fa-rotate-left mr-1"></i> Restore Hidden Charts</button>
                 <label class="hidden sm:block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Layout Style:</label>
                 <select id="selLayoutMode" class="text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm font-medium">
                     <option value="grid">Grid</option>
@@ -240,8 +244,18 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 3D Overview Legend -->
+                <div id="overviewLegend" class="hidden flex flex-wrap items-center gap-4 text-[10px] font-medium text-slate-600 dark:text-slate-300 mt-2 mb-1 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/80 rounded border border-slate-200 dark:border-slate-700 w-fit">
+                    <div class="flex items-center gap-1.5"><span id="legBase" class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color: #3b82f6;"></span> Normal Points</div>
+                    <div class="flex items-center gap-1.5 border-r border-slate-300 dark:border-slate-600 pr-3"><span id="legCentroid" class="w-2.5 h-2.5 transform rotate-45 shadow-sm" style="background-color: #94a3b8;"></span> Centroid</div>
+                    <div class="leg-fail flex items-center gap-1.5 hidden"><span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color: #eab308;"></span> T1</div>
+                    <div class="leg-fail flex items-center gap-1.5 hidden"><span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color: #f97316;"></span> T2</div>
+                    <div class="leg-fail flex items-center gap-1.5 hidden"><span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color: #ef4444;"></span> T3</div>
+                </div>
+
                 <!-- Wrapper for absolute sizing to fix Plotly resize loops and clipping -->
-                <div id="overviewChartWrapper" class="relative w-full flex-1 mt-2">
+                <div id="overviewChartWrapper" class="relative w-full flex-1 mt-1">
                     <div id="plotOverview" class="absolute inset-0"></div>
                 </div>
             </div>
@@ -250,7 +264,8 @@
                 <!-- Stepping Charts (X, Y, Angle) -->
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls transition-colors" id="cardSteps">
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                    <div id="wrapper_stepX" class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full relative">
+                        <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 z-10" onclick="hideDefaultChart('plotStepX', 'wrapper_stepX', 'stepX')" title="Hide Chart"><i class="fa-solid fa-xmark"></i></button>
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
                             <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-left-right text-slate-400 dark:text-slate-500 mr-2"></i> X-Lattice</h3>
@@ -271,9 +286,11 @@
                                 <div class="flex items-center gap-1">
                                     <input type="number" id="inpNomStepX" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                     <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                    <input type="number" id="inpTol1StepX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <input type="number" id="inpTol1StepX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('stepX')" data-metric="stepX">
                                     <span class="text-[10px] text-slate-400">/</span>
                                     <input type="number" id="inpTol2StepX" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol3StepX" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                 </div>
                                 <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                                     <button onclick="downloadPlot('plotStepX', 'X-Lattice')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -283,7 +300,8 @@
                         <div id="plotStepX" class="w-full flex-1 min-h-[250px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                    <div id="wrapper_stepY" class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full relative">
+                        <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 z-10" onclick="hideDefaultChart('plotStepY', 'wrapper_stepY', 'stepY')" title="Hide Chart"><i class="fa-solid fa-xmark"></i></button>
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
                             <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-arrows-up-down text-slate-400 dark:text-slate-500 mr-2"></i> Y-Lattice</h3>
@@ -304,9 +322,11 @@
                                 <div class="flex items-center gap-1">
                                     <input type="number" id="inpNomStepY" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                     <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                    <input type="number" id="inpTol1StepY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <input type="number" id="inpTol1StepY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('stepY')" data-metric="stepY">
                                     <span class="text-[10px] text-slate-400">/</span>
                                     <input type="number" id="inpTol2StepY" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol3StepY" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                 </div>
                                 <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                                     <button onclick="downloadPlot('plotStepY', 'Y-Lattice')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -316,7 +336,8 @@
                         <div id="plotStepY" class="w-full flex-1 min-h-[250px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                    <div id="wrapper_angle" class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full relative">
+                        <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 z-10" onclick="hideDefaultChart('plotAngle', 'wrapper_angle', 'angle')" title="Hide Chart"><i class="fa-solid fa-xmark"></i></button>
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
                             <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-angle-right text-slate-400 dark:text-slate-500 mr-2"></i> Lattice Angle</h3>
@@ -337,9 +358,11 @@
                                 <div class="flex items-center gap-1">
                                     <input type="number" id="inpNomAngle" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                     <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                    <input type="number" id="inpTol1Angle" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <input type="number" id="inpTol1Angle" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('angle')" data-metric="angle">
                                     <span class="text-[10px] text-slate-400">/</span>
                                     <input type="number" id="inpTol2Angle" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol3Angle" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderStepPlots()">
                                 </div>
                                 <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                                     <button onclick="downloadPlot('plotAngle', 'Lattice_Angle')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -353,7 +376,8 @@
                 <!-- Bounding Box Charts (Width and Height) -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls transition-colors" id="cardBB">
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                    <div id="wrapper_bbX" class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full relative">
+                        <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 z-10" onclick="hideDefaultChart('plotBBX', 'wrapper_bbX', 'bbX')" title="Hide Chart"><i class="fa-solid fa-xmark"></i></button>
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
                             <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Width</h3>
@@ -374,9 +398,11 @@
                                 <div class="flex items-center gap-1">
                                     <input type="number" id="inpNomBBX" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
                                     <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                    <input type="number" id="inpTol1BBX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <input type="number" id="inpTol1BBX" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('bbX')" data-metric="bbX">
                                     <span class="text-[10px] text-slate-400">/</span>
                                     <input type="number" id="inpTol2BBX" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol3BBX" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
                                 </div>
                                 <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                                     <button onclick="downloadPlot('plotBBX', 'Aperture_Width')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -386,7 +412,8 @@
                         <div id="plotBBX" class="w-full flex-1 min-h-[300px]"></div>
                     </div>
                     
-                    <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
+                    <div id="wrapper_bbY" class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full relative">
+                        <button class="absolute top-2 right-2 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 transition-colors px-2 py-1 z-10" onclick="hideDefaultChart('plotBBY', 'wrapper_bbY', 'bbY')" title="Hide Chart"><i class="fa-solid fa-xmark"></i></button>
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
                             <div class="w-full break-words min-w-0">
                                 <h3 class="text-lg font-semibold dark:text-slate-100"><i class="fa-solid fa-compress text-slate-400 dark:text-slate-500 mr-2"></i> Aperture Height</h3>
@@ -407,9 +434,11 @@
                                 <div class="flex items-center gap-1">
                                     <input type="number" id="inpNomBBY" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
                                     <span class="text-[10px] text-slate-400">&plusmn;</span>
-                                    <input type="number" id="inpTol1BBY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <input type="number" id="inpTol1BBY" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('bbY')" data-metric="bbY">
                                     <span class="text-[10px] text-slate-400">/</span>
                                     <input type="number" id="inpTol2BBY" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
+                                    <span class="text-[10px] text-slate-400">/</span>
+                                    <input type="number" id="inpTol3BBY" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderBBPlots()">
                                 </div>
                                 <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                                     <button onclick="downloadPlot('plotBBY', 'Aperture_Height')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -516,13 +545,14 @@
             customDims: {},
             refStep: {dx: 0, dy: 0},
             latticeVector: {dx: 1, dy: 0},
-            outOfTolApertures: { warn: new Set(), critical: new Set() },
+            outOfTolApertures: { notice: new Set(), warn: new Set(), critical: new Set() },
             overviewView: 'iso',
             // Extended tracking stats
             metricFails: {},
             activeFailFilters: new Set(),
             knownMetrics: new Set(),
             metricsData: {},
+            hiddenCharts: new Set(),
             logoDataUrl: null,
             logoFormat: null
         };
@@ -574,7 +604,6 @@
             sidebarCompanyText: document.getElementById('sidebarCompanyText')
         };
 
-        // Event Listeners Registration
         UI.fileInput.addEventListener('change', handleFileUpload);
         UI.btnLoadSample.addEventListener('click', generateSampleData);
         UI.btnProcess.addEventListener('click', processData);
@@ -585,10 +614,9 @@
         UI.inpLogoUpload.addEventListener('change', handleLogoUpload);
         UI.btnRemoveLogo.addEventListener('click', removeLogo);
 
-        // Dynamically update the app title and sidebar when company name changes
         UI.inpCompanyName.addEventListener('input', (e) => {
             const companyName = e.target.value.trim() || "AF ENGINEERING TOOLS";
-            UI.sidebarCompanyText.innerText = companyName.toUpperCase();
+            if (UI.sidebarCompanyText) UI.sidebarCompanyText.innerText = companyName.toUpperCase();
             document.title = `Aperture Tolerance Analyzer - ${companyName}`;
         });
 
@@ -611,7 +639,6 @@
             const bb = UI.cardBB;
             const chartWrapper = document.getElementById('overviewChartWrapper');
 
-            // Handle hidden state if no data
             if (State.rawPoints.length === 0) {
                 overview.classList.add('hidden');
                 overview.classList.remove('flex');
@@ -625,27 +652,23 @@
                 bb.classList.remove('hidden');
             }
 
-            // Reset base layout classes. Transitioning colors only prevents resize lag.
             overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-colors z-30 overflow-hidden shrink-0';
             scrollContainer.className = 'flex flex-col gap-6 transition-colors w-full';
             steps.className = 'grid gap-6 chart-controls transition-colors';
             bb.className = 'grid gap-6 chart-controls transition-colors';
             
-            // Clean inline manual resize dimension styles if any 
             overview.style.top = '';
             overview.style.width = '';
             overview.style.height = '';
             
-            // Apply mode-specific layouts utilizing independent interior scrolling
             if (mode === 'grid' || mode === 'full') {
-                // PAGE-LEVEL SCROLLING: The whole window scrolls normally
                 mainContainer.classList.add('overflow-y-auto');
                 mainContainer.classList.remove('overflow-hidden');
                 wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative';
                 
                 if (mode === 'grid') {
                     overview.classList.add('w-full', 'resize-y');
-                    overview.style.height = '45vh'; // Give a default height to prevent collapsing
+                    overview.style.height = '45vh';
                     overview.style.minHeight = '300px';
                     scrollContainer.classList.add('w-full');
                     steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
@@ -661,24 +684,17 @@
                     chartWrapper.className = 'relative w-full flex-1 mt-2';
                 }
             } else {
-                // CONTAINER-LEVEL SCROLLING (PINNED): Main page locks, charts scroll independently
                 mainContainer.classList.remove('overflow-y-auto');
-                mainContainer.classList.add('overflow-hidden'); // Locks the viewport
-                
-                // wrapper flex-1 min-h-0 allows it to strictly fill the remaining height below toolbar
+                mainContainer.classList.add('overflow-hidden');
                 wrapper.className = 'flex flex-col lg:flex-row gap-6 w-full flex-1 min-h-0 relative items-start';
-                
-                // Dedicate scrolling specifically to the charts container
                 scrollContainer.classList.add('flex-1', 'h-full', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-10');
                 
                 if (mode === 'split') {
-                    // Split screen: overview takes left side, scrollContainer takes right side
                     overview.classList.add('w-full', 'lg:w-[45%]', 'h-[40vh]', 'lg:h-full', 'resize-y', 'lg:resize-x');
                     steps.classList.add('grid-cols-1');
                     bb.classList.add('grid-cols-1');
                     chartWrapper.className = 'relative w-full flex-1 mt-2 h-full';
                 } else if (mode === 'pinned-top') {
-                    // Pinned top: wrapper must be forced to column alignment
                     wrapper.classList.remove('lg:flex-row');
                     overview.classList.add('w-full', 'h-[45vh]', 'resize-y');
                     steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
@@ -687,13 +703,10 @@
                 }
             }
             
-            // Force Plotly to recalculate bounds to match new absolute container
             setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
             setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 150);
-            setTimeout(() => { if (document.getElementById('plotOverview')) Plotly.Plots.resize('plotOverview'); }, 300);
         }
         
-        // Dark Mode Logic
         function toggleTheme() {
             document.documentElement.classList.toggle('dark');
             updateAllChartsTheme();
@@ -702,11 +715,11 @@
         function getThemeLayout() {
             const isDark = document.documentElement.classList.contains('dark');
             return {
-                paper_bgcolor: isDark ? '#1e293b' : '#ffffff', // slate-800 / white
-                plot_bgcolor: isDark ? '#0f172a' : '#f8fafc',  // slate-900 / slate-50
-                fontColor: isDark ? '#cbd5e1' : '#334155',     // slate-300 / slate-700
-                gridColor: isDark ? '#334155' : '#e2e8f0',     // slate-700 / slate-200
-                zeroLineColor: isDark ? '#475569' : '#cbd5e1'  // slate-600 / slate-300
+                paper_bgcolor: isDark ? '#1e293b' : '#ffffff',
+                plot_bgcolor: isDark ? '#0f172a' : '#f8fafc',
+                fontColor: isDark ? '#cbd5e1' : '#334155',
+                gridColor: isDark ? '#334155' : '#e2e8f0',
+                zeroLineColor: isDark ? '#475569' : '#cbd5e1'
             };
         }
 
@@ -722,12 +735,10 @@
                 'yaxis.zerolinecolor': theme.zeroLineColor
             };
             
-            // Apply to all valid plot IDs
             const plots = ['plotOverview', 'plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY'];
             plots.forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.layout) {
-                    // For 3D scene grid lines
                     if (el.layout.scene) {
                         const sceneUpdate = {
                             'scene.xaxis.gridcolor': theme.gridColor,
@@ -763,7 +774,6 @@
             }
 
             State.logoFormat = isPNG ? 'PNG' : 'JPEG';
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 State.logoDataUrl = e.target.result;
@@ -858,7 +868,42 @@
             }
         }
 
-        // Dropdown interactions for fails filter
+        window.hideDefaultChart = function(plotId, wrapperId, metricId) {
+            State.hiddenCharts.add(plotId);
+            const el = document.getElementById(wrapperId);
+            if (el) {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+            State.activeFailFilters.delete(metricId);
+            update3DOverview();
+            
+            const btnRestore = document.getElementById('btnRestoreCharts');
+            if (btnRestore) btnRestore.classList.remove('hidden');
+        };
+
+        window.restoreDefaultCharts = function() {
+            State.hiddenCharts.clear();
+            const defaultCharts = [
+                {plot: 'plotStepX', wrap: 'wrapper_stepX'},
+                {plot: 'plotStepY', wrap: 'wrapper_stepY'},
+                {plot: 'plotAngle', wrap: 'wrapper_angle'},
+                {plot: 'plotBBX', wrap: 'wrapper_bbX'},
+                {plot: 'plotBBY', wrap: 'wrapper_bbY'}
+            ];
+            defaultCharts.forEach(c => {
+                const el = document.getElementById(c.wrap);
+                if (el) {
+                    el.classList.remove('hidden');
+                    el.classList.add('flex');
+                }
+            });
+            const btnRestore = document.getElementById('btnRestoreCharts');
+            if (btnRestore) btnRestore.classList.add('hidden');
+            
+            setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
+        };
+
         window.toggleFailFilter = function(metricId, isChecked) {
             if (isChecked) State.activeFailFilters.add(metricId);
             else State.activeFailFilters.delete(metricId);
@@ -887,8 +932,6 @@
                 parseRawText(text);
                 UI.btnProcess.classList.add('animate-pulse');
                 setTimeout(() => UI.btnProcess.classList.remove('animate-pulse'), 1500);
-                
-                // Process the loaded file automatically
                 processData();
             };
             reader.readAsText(file);
@@ -1114,7 +1157,7 @@
             UI.exportPanel.classList.remove('hidden');
             UI.cardDimensions.classList.remove('hidden');
 
-            updateLayoutMode(); // Applies layouts and unhides cards
+            updateLayoutMode();
 
             UI.statTotalPoints.innerText = State.rawPoints.length;
             UI.statApertures.innerText = State.apertures.length;
@@ -1135,11 +1178,23 @@
             UI.selDimMode.value = 'internal';
             toggleDimMode();
 
-            UI.dynamicChartsContainer.innerHTML = '';
-            UI.dynamicChartsContainer.appendChild(UI.emptyDimensionMsg);
-            UI.emptyDimensionMsg.classList.remove('hidden');
-            State.dimensionCharts = 0;
-            State.customDims = {};
+            // Recalculate existing custom dimensions using the new data
+            for (let chartDivId in State.customDims) {
+                let dim = State.customDims[chartDivId];
+                let result = computeCustomDimData(dim.config);
+                if (result) {
+                    dim.values = result.dimensions;
+                    dim.labels = result.chartLabels;
+                    let idx = parseInt(chartDivId.split('_')[1], 10);
+                    renderCustomDimChart(idx);
+                }
+            }
+
+            if (Object.keys(State.customDims).length === 0) {
+                UI.emptyDimensionMsg.classList.remove('hidden');
+            } else {
+                UI.emptyDimensionMsg.classList.add('hidden');
+            }
         }
 
         function getFilteredData(dataArr, minId, maxId) {
@@ -1150,35 +1205,37 @@
             return dataArr.map(v => (v !== null && v >= min && v <= max) ? v : null);
         }
 
-        function getToleranceShapes(nomVal, tol1Val, tol2Val) {
+        function getToleranceShapes(nomVal, tol1Val, tol2Val, tol3Val) {
             const shapes = [];
             if (!isNaN(nomVal)) {
+                
+                let t1 = (!isNaN(tol1Val) && tol1Val > 0) ? tol1Val : null;
+                let t2 = (!isNaN(tol2Val) && tol2Val > 0) ? tol2Val : null;
+                let t3 = (!isNaN(tol3Val) && tol3Val > 0) ? tol3Val : null;
+
+                // Sort the valid tolerances descending so the largest is drawn first
+                // This ensures color bands cleanly layer over each other and T3 remains visible
+                let validTols = [
+                    { val: t3, color: '#ef4444', op: 0.10 }, // Red (Critical)
+                    { val: t2, color: '#f59e0b', op: 0.15 }, // Amber (Warn)
+                    { val: t1, color: '#22c55e', op: 0.15 }  // Green (Notice)
+                ].filter(t => t.val !== null).sort((a, b) => b.val - a.val);
+
+                validTols.forEach(t => {
+                    shapes.push({
+                        type: 'rect', y0: nomVal - t.val, y1: nomVal + t.val,
+                        x0: 0, x1: 1, xref: 'paper', yref: 'y',
+                        fillcolor: t.color, opacity: t.op, line: { width: 0 },
+                        layer: 'below'
+                    });
+                });
+                
+                // Keep the nominal reference dashed line drawn last (on top)
                 shapes.push({
                     type: 'line', y0: nomVal, y1: nomVal,
                     x0: 0, x1: 1, xref: 'paper', yref: 'y',
                     line: { color: '#22c55e', width: 2, dash: 'dot' } 
                 });
-                
-                let tVals = [tol1Val, tol2Val].filter(t => !isNaN(t) && t > 0).sort((a,b) => a-b);
-                
-                if (tVals.length > 0) {
-                    // Inner tolerance
-                    shapes.push({
-                        type: 'rect', y0: nomVal - tVals[0], y1: nomVal + tVals[0],
-                        x0: 0, x1: 1, xref: 'paper', yref: 'y',
-                        fillcolor: '#22c55e', opacity: 0.15, line: { width: 0 },
-                        layer: 'below' 
-                    });
-                }
-                if (tVals.length > 1 && tVals[1] > tVals[0]) {
-                    // Outer tolerance
-                    shapes.push({
-                        type: 'rect', y0: nomVal - tVals[1], y1: nomVal + tVals[1],
-                        x0: 0, x1: 1, xref: 'paper', yref: 'y',
-                        fillcolor: '#f59e0b', opacity: 0.15, line: { width: 0 },
-                        layer: 'below' 
-                    });
-                }
             }
             return shapes;
         }
@@ -1212,16 +1269,92 @@
             Plotly.relayout(plotId, update);
         }
 
-        function updateMetricStats(data, nomId, tol1Id, tol2Id, metricId, metricName, unit) {
-            State.metricFails[metricId] = { warn: new Set(), critical: new Set() };
+        function onTol1Input(metricId) {
+            let data = [];
+            if (metricId === 'stepX') data = getFilteredData(State.xSteps, 'fMinStepX', 'fMaxStepX');
+            else if (metricId === 'stepY') data = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
+            else if (metricId === 'angle') data = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
+            else if (metricId === 'bbX') data = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
+            else if (metricId === 'bbY') data = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
+            else if (metricId.startsWith('dimChart_')) {
+                const chartData = State.customDims[metricId];
+                if (chartData) {
+                    const idx = metricId.split('_')[1];
+                    data = getFilteredData(chartData.values, `fMinDim_${idx}`, `fMaxDim_${idx}`);
+                }
+            }
+
+            const validVals = data.filter(d => d !== null && d !== undefined);
+            if (validVals.length > 0) {
+                // Fix capitalization for Width and Height metric IDs
+                let suffix = metricId;
+                if (metricId === 'bbX') suffix = 'BBX';
+                else if (metricId === 'bbY') suffix = 'BBY';
+                else suffix = metricId.charAt(0).toUpperCase() + metricId.slice(1);
+
+                const nomInput = document.getElementById(metricId.startsWith('dimChart_') ? `nomDim_${metricId.split('_')[1]}` : `inpNom${suffix}`);
+                const nom = nomInput ? parseFloat(nomInput.value) : NaN;
+                const meanVal = isNaN(nom) ? calcAvg(validVals) : nom;
+
+                let deviations = validVals.map(v => Math.abs(v - meanVal)).sort((a, b) => a - b);
+                
+                // Helper to determine the optimal actual bound resolving closest to target error rate
+                function findBestTolerance(devs, targetRate) {
+                    const total = devs.length;
+                    if (total === 0) return 0;
+                    
+                    let bestTol = 0;
+                    let minDiff = Math.abs(1.0 - targetRate); // Default state: 0 tol means 100% fails
+                    
+                    for (let i = 0; i < total; i++) {
+                        let tol = devs[i];
+                        // Only calculate for the last duplicate value encountered to ensure correct pass/fail thresholding
+                        if (i < total - 1 && devs[i] === devs[i+1]) continue;
+                        
+                        let fails = total - 1 - i;
+                        let currentRate = fails / total;
+                        let diff = Math.abs(currentRate - targetRate);
+                        
+                        if (diff < minDiff) {
+                            minDiff = diff;
+                            bestTol = tol;
+                        }
+                    }
+                    return bestTol;
+                }
+                
+                // Target ~31.73% empirical fails (approx ~1-sigma distribution)
+                let t2Val = findBestTolerance(deviations, 0.3173);
+                // Target ~0.27% empirical fails (approx ~3-sigma distribution)
+                let t3Val = findBestTolerance(deviations, 0.0027);
+
+                let t2Input = document.getElementById(metricId.startsWith('dimChart_') ? `tol2Dim_${metricId.split('_')[1]}` : `inpTol2${suffix}`);
+                let t3Input = document.getElementById(metricId.startsWith('dimChart_') ? `tol3Dim_${metricId.split('_')[1]}` : `inpTol3${suffix}`);
+
+                if (t2Input) t2Input.value = parseFloat(t2Val.toFixed(2));
+                if (t3Input) t3Input.value = parseFloat(t3Val.toFixed(2));
+            }
+
+            if (metricId.startsWith('dimChart_')) {
+                renderCustomDimChart(parseInt(metricId.split('_')[1], 10));
+            } else if (metricId === 'bbX' || metricId === 'bbY') {
+                renderBBPlots();
+            } else {
+                renderStepPlots();
+            }
+        }
+
+        function updateMetricStats(data, nomId, tol1Id, tol2Id, tol3Id, metricId, metricName, unit) {
+            State.metricFails[metricId] = { notice: new Set(), warn: new Set(), critical: new Set() };
             const nom = parseFloat(document.getElementById(nomId)?.value);
             const t1 = parseFloat(document.getElementById(tol1Id)?.value);
             const t2 = parseFloat(document.getElementById(tol2Id)?.value);
+            const t3 = parseFloat(document.getElementById(tol3Id)?.value);
             
-            let tVals = [t1, t2].filter(t => !isNaN(t) && t > 0).sort((a,b) => a-b);
+            let tVals = [t1, t2, t3].filter(t => !isNaN(t) && t > 0).sort((a,b) => a-b);
             let hasTol = !isNaN(nom) && tVals.length > 0;
             
-            let fails1 = 0, fails2 = 0;
+            let fails1 = 0, fails2 = 0, fails3 = 0;
             let totalValid = data.filter(d => d !== null && d !== undefined).length;
             
             if (hasTol) {
@@ -1230,17 +1363,20 @@
                     State.knownMetrics.add(metricId);
                 }
                 
-                let maxT = Math.max(...[t1, t2].filter(t => !isNaN(t)));
-                let minT = Math.min(...[t1, t2].filter(t => !isNaN(t)));
-                
                 data.forEach((val, i) => {
                     if (val !== null && val !== undefined) {
                         let dev = Math.abs(val - nom);
                         if (!isNaN(t1) && dev > t1) fails1++;
                         if (!isNaN(t2) && dev > t2) fails2++;
+                        if (!isNaN(t3) && dev > t3) fails3++;
 
-                        if (dev > maxT) State.metricFails[metricId].critical.add(i);
-                        else if (dev > minT) State.metricFails[metricId].warn.add(i);
+                        if (!isNaN(t3) && dev > t3) {
+                            State.metricFails[metricId].critical.add(i);
+                        } else if (!isNaN(t2) && dev > t2) {
+                            State.metricFails[metricId].warn.add(i);
+                        } else if (!isNaN(t1) && dev > t1) {
+                            State.metricFails[metricId].notice.add(i);
+                        }
                     }
                 });
             } else {
@@ -1253,25 +1389,34 @@
                 id: metricId, name: metricName, avg, nom, 
                 t1: isNaN(t1)? null : t1, 
                 t2: isNaN(t2)? null : t2, 
-                hasTol, fails1, fails2, totalValid, unit 
+                t3: isNaN(t3)? null : t3, 
+                hasTol, fails1, fails2, fails3, totalValid, unit 
             };
             
             const statsEl = document.getElementById(`stats_${metricId}`);
             if (statsEl) {
                 let txt = `Avg: ${avg.toFixed(3)}${unit}`;
                 if (hasTol) {
-                    if (!isNaN(t1)) txt += ` | F1: ${fails1}/${totalValid}`;
-                    if (!isNaN(t2)) txt += ` | F2: ${fails2}/${totalValid}`;
+                    if (!isNaN(t1)) {
+                        let pct1 = totalValid > 0 ? ((fails1 / totalValid) * 100).toFixed(2) : "0.00";
+                        txt += ` | T1 Fails: ${fails1}/${totalValid} (${pct1}%)`;
+                    }
+                    if (!isNaN(t2)) {
+                        let pct2 = totalValid > 0 ? ((fails2 / totalValid) * 100).toFixed(2) : "0.00";
+                        txt += ` | T2 Fails: ${fails2}/${totalValid} (${pct2}%)`;
+                    }
+                    if (!isNaN(t3)) {
+                        let pct3 = totalValid > 0 ? ((fails3 / totalValid) * 100).toFixed(2) : "0.00";
+                        txt += ` | T3 Fails: ${fails3}/${totalValid} (${pct3}%)`;
+                    }
                 }
                 statsEl.innerText = txt;
                 
-                if (hasTol && (fails1 > 0 || fails2 > 0)) {
-                    statsEl.classList.add(fails2 > 0 ? 'text-red-600' : 'text-amber-600', fails2 > 0 ? 'bg-red-50' : 'bg-amber-50', fails2 > 0 ? 'border-red-200' : 'border-amber-200');
-                    statsEl.classList.add(fails2 > 0 ? 'dark:text-red-400' : 'dark:text-amber-400', fails2 > 0 ? 'dark:bg-red-900/30' : 'dark:bg-amber-900/30', fails2 > 0 ? 'dark:border-red-800' : 'dark:border-amber-800');
-                    statsEl.classList.remove('text-slate-600', 'bg-slate-100/80', 'border-slate-200', 'dark:text-slate-300', 'dark:bg-slate-800/80', 'dark:border-slate-700');
+                if (hasTol && (fails1 > 0 || fails2 > 0 || fails3 > 0)) {
+                    let hasCritical = (fails3 > 0 && !isNaN(t3)) || (fails2 > 0 && isNaN(t3)) || (fails1 > 0 && isNaN(t2));
+                    statsEl.className = `text-[11px] font-medium mt-1.5 inline-block px-2 py-0.5 rounded border transition-colors ${hasCritical ? 'text-red-600 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/30 dark:border-red-800' : 'text-amber-600 bg-amber-50 border-amber-200 dark:text-amber-400 dark:bg-amber-900/30 dark:border-amber-800'}`;
                 } else {
-                    statsEl.classList.add('text-slate-600', 'bg-slate-100/80', 'border-slate-200', 'dark:text-slate-300', 'dark:bg-slate-800/80', 'dark:border-slate-700');
-                    statsEl.classList.remove('text-red-600', 'bg-red-50', 'border-red-200', 'text-amber-600', 'bg-amber-50', 'border-amber-200', 'dark:text-red-400', 'dark:bg-red-900/30', 'dark:border-red-800', 'dark:text-amber-400', 'dark:bg-amber-900/30', 'dark:border-amber-800');
+                    statsEl.className = 'text-[11px] font-medium text-slate-600 dark:text-slate-300 mt-1.5 bg-slate-100/80 dark:bg-slate-800/80 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 transition-colors';
                 }
             }
         }
@@ -1308,9 +1453,12 @@
                 dropdown.innerHTML = html;
             }
 
-            State.outOfTolApertures = { warn: new Set(), critical: new Set() };
+            State.outOfTolApertures = { notice: new Set(), warn: new Set(), critical: new Set() };
             for (const mId in State.metricFails) {
                 if (State.activeFailFilters.has(mId)) {
+                    if (State.metricFails[mId].notice) {
+                        State.metricFails[mId].notice.forEach(apIdx => State.outOfTolApertures.notice.add(apIdx));
+                    }
                     if (State.metricFails[mId].warn) {
                         State.metricFails[mId].warn.forEach(apIdx => State.outOfTolApertures.warn.add(apIdx));
                     }
@@ -1326,8 +1474,9 @@
         function renderOverviewPlot() {
             let plotX = [], plotY = [], plotZ = [], plotText = [], plotColors = [], plotTextArr = [];
             const baseColor = UI.inpMarkerColor.value || '#3b82f6';
-            const criticalColor = '#ef4444'; // Red
-            const warnColor = '#f59e0b'; // Amber
+            const criticalColor = '#ef4444'; // Red (T3)
+            const warnColor = '#f97316';     // Orange (T2)
+            const noticeColor = '#eab308';   // Yellow (T1)
             const centroidColor = UI.inpCentroidColor.value || '#94a3b8';
             const highlightFailures = UI.chkHighlightTol.checked;
             const showLabels = UI.chkShowLabels.checked;
@@ -1337,11 +1486,28 @@
             const is2D = view !== 'iso';
             const theme = getThemeLayout();
 
+            // Update Legend UI
+            const legBase = document.getElementById('legBase');
+            const legCentroid = document.getElementById('legCentroid');
+            const overviewLegend = document.getElementById('overviewLegend');
+            const failLegends = document.querySelectorAll('.leg-fail');
+
+            if (legBase) legBase.style.backgroundColor = baseColor;
+            if (legCentroid) legCentroid.style.backgroundColor = centroidColor;
+            if (overviewLegend) overviewLegend.classList.remove('hidden');
+            if (failLegends) {
+                failLegends.forEach(el => {
+                    if (highlightFailures) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                });
+            }
+
             State.apertures.forEach((ap, apIdx) => {
                 let color = baseColor;
                 if (highlightFailures) {
                     if (State.outOfTolApertures.critical.has(apIdx)) color = criticalColor;
                     else if (State.outOfTolApertures.warn.has(apIdx)) color = warnColor;
+                    else if (State.outOfTolApertures.notice.has(apIdx)) color = noticeColor;
                 }
                 ap.forEach((pt, ptIdx) => {
                     plotX.push(pt.x); plotY.push(pt.y); plotZ.push(pt.z);
@@ -1440,9 +1606,9 @@
             const yData = getFilteredData(State.ySteps, 'fMinStepY', 'fMaxStepY');
             const angleData = getFilteredData(State.angles, 'fMinAngle', 'fMaxAngle');
 
-            updateMetricStats(xData, 'inpNomStepX', 'inpTol1StepX', 'inpTol2StepX', 'stepX', 'X-Lattice', 'mm');
-            updateMetricStats(yData, 'inpNomStepY', 'inpTol1StepY', 'inpTol2StepY', 'stepY', 'Y-Lattice', 'mm');
-            updateMetricStats(angleData, 'inpNomAngle', 'inpTol1Angle', 'inpTol2Angle', 'angle', 'Lattice Angle', '°');
+            updateMetricStats(xData, 'inpNomStepX', 'inpTol1StepX', 'inpTol2StepX', 'inpTol3StepX', 'stepX', 'X-Lattice', 'mm');
+            updateMetricStats(yData, 'inpNomStepY', 'inpTol1StepY', 'inpTol2StepY', 'inpTol3StepY', 'stepY', 'Y-Lattice', 'mm');
+            updateMetricStats(angleData, 'inpNomAngle', 'inpTol1Angle', 'inpTol2Angle', 'inpTol3Angle', 'angle', 'Lattice Angle', '°');
 
             const avgX = State.metricsData['stepX'].avg;
             const avgY = State.metricsData['stepY'].avg;
@@ -1467,7 +1633,7 @@
                 getAvgTrace(xLabels, avgX)
             ], {
                 ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTol1StepX').value), parseFloat(document.getElementById('inpTol2StepX').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTol1StepX').value), parseFloat(document.getElementById('inpTol2StepX').value), parseFloat(document.getElementById('inpTol3StepX').value))
             }, {responsive: true});
 
             Plotly.react('plotStepY', [
@@ -1479,7 +1645,7 @@
                 getAvgTrace(xLabels, avgY)
             ], {
                 ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTol1StepY').value), parseFloat(document.getElementById('inpTol2StepY').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTol1StepY').value), parseFloat(document.getElementById('inpTol2StepY').value), parseFloat(document.getElementById('inpTol3StepY').value))
             }, {responsive: true});
 
             Plotly.react('plotAngle', [
@@ -1491,7 +1657,7 @@
                 getAvgTrace(xLabels, avgAngle)
             ], {
                 ...layoutBase, yaxis: { title: 'Angle [deg]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTol1Angle').value), parseFloat(document.getElementById('inpTol2Angle').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTol1Angle').value), parseFloat(document.getElementById('inpTol2Angle').value), parseFloat(document.getElementById('inpTol3Angle').value))
             }, {responsive: true});
 
             update3DOverview();
@@ -1502,8 +1668,8 @@
             const wData = getFilteredData(State.bbWidths, 'fMinBBX', 'fMaxBBX');
             const hData = getFilteredData(State.bbHeights, 'fMinBBY', 'fMaxBBY');
 
-            updateMetricStats(wData, 'inpNomBBX', 'inpTol1BBX', 'inpTol2BBX', 'bbX', 'Aperture Width', 'mm');
-            updateMetricStats(hData, 'inpNomBBY', 'inpTol1BBY', 'inpTol2BBY', 'bbY', 'Aperture Height', 'mm');
+            updateMetricStats(wData, 'inpNomBBX', 'inpTol1BBX', 'inpTol2BBX', 'inpTol3BBX', 'bbX', 'Aperture Width', 'mm');
+            updateMetricStats(hData, 'inpNomBBY', 'inpTol1BBY', 'inpTol2BBY', 'inpTol3BBY', 'bbY', 'Aperture Height', 'mm');
 
             const avgW = State.metricsData['bbX'].avg;
             const avgH = State.metricsData['bbY'].avg;
@@ -1526,7 +1692,7 @@
                 getAvgTrace(xLabels, avgW)
             ], {
                 ...layoutBase,
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBX').value), parseFloat(document.getElementById('inpTol1BBX').value), parseFloat(document.getElementById('inpTol2BBX').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBX').value), parseFloat(document.getElementById('inpTol1BBX').value), parseFloat(document.getElementById('inpTol2BBX').value), parseFloat(document.getElementById('inpTol3BBX').value))
             }, {responsive: true});
 
             Plotly.react('plotBBY', [
@@ -1537,7 +1703,7 @@
                 getAvgTrace(xLabels, avgH)
             ], {
                 ...layoutBase,
-                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTol1BBY').value), parseFloat(document.getElementById('inpTol2BBY').value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTol1BBY').value), parseFloat(document.getElementById('inpTol2BBY').value), parseFloat(document.getElementById('inpTol3BBY').value))
             }, {responsive: true});
             
             update3DOverview();
@@ -1574,7 +1740,7 @@
             }
 
             const filteredDims = getFilteredData(dimensionsRaw, `fMinDim_${idx}`, `fMaxDim_${idx}`);
-            updateMetricStats(filteredDims, `nomDim_${idx}`, `tol1Dim_${idx}`, `tol2Dim_${idx}`, chartDivId, chartData.title, unit);
+            updateMetricStats(filteredDims, `nomDim_${idx}`, `tol1Dim_${idx}`, `tol2Dim_${idx}`, `tol3Dim_${idx}`, chartDivId, chartData.title, unit);
             const avg = State.metricsData[chartDivId].avg;
             const theme = getThemeLayout();
 
@@ -1593,16 +1759,20 @@
                 xaxis: { title: xAxisTitle, tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
                 yaxis: { title: yAxisTitle, tickformat: '.1f', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
                 paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor, font: { color: theme.fontColor }, showlegend: false,
-                shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tol1Dim_${idx}`).value), parseFloat(document.getElementById(`tol2Dim_${idx}`).value))
+                shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tol1Dim_${idx}`).value), parseFloat(document.getElementById(`tol2Dim_${idx}`).value), parseFloat(document.getElementById(`tol3Dim_${idx}`).value))
             }, {responsive: true});
 
             update3DOverview();
         }
 
-        function addDimensionChart() {
-            const mode = UI.selDimMode.value;
-            const metric = UI.selMetricType.value;
-            const metricName = UI.selMetricType.options[UI.selMetricType.selectedIndex].text;
+        function computeCustomDimData(config) {
+            const mode = config.mode;
+            const metric = config.metric;
+            const metricName = config.metricName;
+            const valA = config.valA;
+            const valB = config.valB;
+            const ptAName = config.ptAName;
+            const ptBName = config.ptBName;
 
             let title = "";
             let dimensions = [];
@@ -1610,13 +1780,7 @@
             let xAxisTitle = 'Aperture Index Map';
 
             if (mode === 'internal') {
-                const valA = UI.selPointA.value;
-                const valB = UI.selPointB.value;
-                if (valA === valB) { showNotification("Please select two distinct points.", "error"); return; }
-                
-                title = `Dimension: ${UI.selPointA.options[UI.selPointA.selectedIndex].text} to ${UI.selPointB.options[UI.selPointB.selectedIndex].text} (${metricName})`;
-                UI.emptyDimensionMsg.classList.add('hidden');
-
+                title = `Dimension: ${ptAName} to ${ptBName} (${metricName})`;
                 dimensions = State.apertures.map((ap, index) => {
                     chartLabels.push(String(index));
                     const p1 = valA === 'centroid' ? State.centroids[index] : ap[parseInt(valA, 10)];
@@ -1638,14 +1802,9 @@
                 if (mode.includes('_y_')) dirType = 'y';
 
                 let metricLabel = metric === 'dx' ? 'X Distance' : (metric === 'dy' ? 'Y Distance' : (metric === 'angle' ? 'Lattice Angle' : 'Absolute Distance'));
-                
-                let dirLabel = 'Lattice';
-                if (dirType === 'x') dirLabel = 'X';
-                if (dirType === 'y') dirLabel = 'Y';
+                let dirLabel = dirType === 'x' ? 'X' : (dirType === 'y' ? 'Y' : 'Lattice');
 
                 title = `${rankName} Neighbor Along ${dirLabel}: ${metricLabel}`;
-                
-                UI.emptyDimensionMsg.classList.add('hidden');
 
                 const latVx = State.latticeVector?.dx || State.refStep.dx || 1;
                 const latVy = State.latticeVector?.dy || State.refStep.dy || 0;
@@ -1656,7 +1815,6 @@
                     for (let j = 0; j < State.centroids.length; j++) {
                         if (i === j) continue;
                         let cj = State.centroids[j];
-                        
                         let dx = cj.x - ci.x;
                         let dy = cj.y - ci.y;
                         let dz = cj.z - ci.z;
@@ -1664,7 +1822,6 @@
                         if (dist2D < 1e-5) continue;
                         
                         let proj, perp, angleDev;
-
                         if (dirType === 'lattice') {
                             proj = (dx * latVx + dy * latVy) / latMag;
                             perp = Math.abs(dx * latVy - dy * latVx) / latMag;
@@ -1679,9 +1836,7 @@
                         }
 
                         if (proj <= 0) continue; 
-                        
                         angleDev = Math.atan2(perp, proj); 
-                        
                         if (angleDev <= (30 * Math.PI / 180)) {
                             candidates.push({
                                 index: j, pt: cj, proj: proj, perp: perp,
@@ -1711,10 +1866,7 @@
                     }
                 });
             } else if (mode === 'absolute_pos') {
-                const valA = UI.selPointA.value;
-                const ptName = UI.selPointA.options[UI.selPointA.selectedIndex].text;
-                title = `Absolute Position: ${ptName} (${metricName})`;
-                UI.emptyDimensionMsg.classList.add('hidden');
+                title = `Absolute Position: ${ptAName} (${metricName})`;
 
                 dimensions = State.apertures.map((ap, index) => {
                     chartLabels.push(String(index));
@@ -1727,7 +1879,6 @@
                 });
             } else if (mode === 'raw_points') {
                 title = `All Points: ${metricName}`;
-                UI.emptyDimensionMsg.classList.add('hidden');
                 xAxisTitle = 'Point Index';
 
                 dimensions = State.rawPoints.map((pt, index) => {
@@ -1738,11 +1889,41 @@
                     return null;
                 });
             }
+            
+            return { title, dimensions, chartLabels, xAxisTitle };
+        }
+
+        function addDimensionChart() {
+            const mode = UI.selDimMode.value;
+            const metric = UI.selMetricType.value;
+            const metricName = UI.selMetricType.options[UI.selMetricType.selectedIndex].text;
+            const valA = UI.selPointA.value;
+            const valB = UI.selPointB.value;
+            const ptAName = UI.selPointA.options[UI.selPointA.selectedIndex]?.text || '';
+            const ptBName = UI.selPointB.options[UI.selPointB.selectedIndex]?.text || '';
+
+            if (mode === 'internal' && valA === valB) {
+                showNotification("Please select two distinct points.", "error");
+                return;
+            }
+
+            const config = { mode, metric, metricName, valA, valB, ptAName, ptBName };
+            const result = computeCustomDimData(config);
+            if (!result) return;
+
+            UI.emptyDimensionMsg.classList.add('hidden');
 
             State.dimensionCharts++;
             const idx = State.dimensionCharts;
             const chartDivId = `dimChart_${idx}`;
-            State.customDims[chartDivId] = { values: dimensions, labels: chartLabels, xAxisTitle: xAxisTitle, metric: metric, title: title };
+            State.customDims[chartDivId] = { 
+                config: config,
+                values: result.dimensions, 
+                labels: result.chartLabels, 
+                xAxisTitle: result.xAxisTitle, 
+                metric: metric, 
+                title: result.title 
+            };
 
             const wrapper = document.createElement('div');
             wrapper.className = 'border border-slate-200 dark:border-slate-700 rounded-md p-4 bg-white dark:bg-slate-800 relative chart-controls flex flex-col w-full';
@@ -1752,7 +1933,7 @@
                 </button>
                 <div class="flex flex-col items-start mb-2 gap-3 w-full">
                     <div class="w-full break-words min-w-0 pr-8">
-                        <h4 class="font-medium text-slate-700 dark:text-slate-200 text-sm">${title}</h4>
+                        <h4 class="font-medium text-slate-700 dark:text-slate-200 text-sm">${result.title}</h4>
                         <div id="stats_${chartDivId}" class="text-[11px] font-medium text-slate-600 dark:text-slate-400 mt-1.5 bg-slate-100/80 dark:bg-slate-700/50 inline-block px-2 py-0.5 rounded border border-slate-200 dark:border-slate-600 transition-colors">Avg: 0.0</div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/30 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
@@ -1769,12 +1950,14 @@
                         <div class="flex items-center gap-1">
                             <input type="number" id="nomDim_${idx}" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
                             <span class="text-xs text-slate-400">&plusmn;</span>
-                            <input type="number" id="tol1Dim_${idx}" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="tol1Dim_${idx}" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('dimChart_${idx}')" data-metric="dimChart_${idx}">
                             <span class="text-[10px] text-slate-400">/</span>
                             <input type="number" id="tol2Dim_${idx}" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <span class="text-[10px] text-slate-400">/</span>
+                            <input type="number" id="tol3Dim_${idx}" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
                         </div>
                         <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
-                            <button onclick="downloadPlot('${chartDivId}', '${title.replace(/['"]/g, '\\"')}')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
+                            <button onclick="downloadPlot('${chartDivId}', '${result.title.replace(/['"]/g, '\\"')}')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1834,7 +2017,7 @@
                 r: parseInt(result[1], 16),
                 g: parseInt(result[2], 16),
                 b: parseInt(result[3], 16)
-            } : { r: 39, g: 97, b: 147 }; // Fallback to #276193
+            } : { r: 39, g: 97, b: 147 };
         }
 
         async function downloadPDFReport() {
@@ -1844,7 +2027,6 @@
             }
 
             const { jsPDF } = window.jspdf;
-            
             const originalBtnHTML = UI.btnDownloadPDF.innerHTML;
             UI.btnDownloadPDF.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
             UI.btnDownloadPDF.disabled = true;
@@ -1857,8 +2039,7 @@
                 const printWidth = pageWidth - (margin * 2);
                 let cursorY = 42;
 
-                // Grab user-supplied Company Name (defaults if empty)
-                const companyName = UI.inpCompanyName.value.trim() || "AF ENGINEERING TOOLS";
+                const companyName = UI.inpCompanyName.value || "AF ENGINEERING TOOLS";
                 const accentHex = UI.inpAccentColor.value || '#276193';
                 const accent = hexToRgb(accentHex);
                 const partNo = document.getElementById('inpPartNum').value || "N/A";
@@ -1876,22 +2057,37 @@
 
                 const tableData = [];
                 Object.values(State.metricsData).forEach(m => {
-                    const hasT1 = m.t1 !== null;
-                    const hasT2 = m.t2 !== null;
-                    tableData.push([
-                        m.name,
-                        `${m.avg.toFixed(3)} ${m.unit}`,
-                        hasT1 ? `± ${m.t1}` : '-',
-                        hasT1 ? `${m.fails1} / ${m.totalValid}` : '-',
-                        hasT2 ? `± ${m.t2}` : '-',
-                        hasT2 ? `${m.fails2} / ${m.totalValid}` : '-'
-                    ]);
+                    let isHidden = false;
+                    if (m.id === 'stepX' && State.hiddenCharts.has('plotStepX')) isHidden = true;
+                    if (m.id === 'stepY' && State.hiddenCharts.has('plotStepY')) isHidden = true;
+                    if (m.id === 'angle' && State.hiddenCharts.has('plotAngle')) isHidden = true;
+                    if (m.id === 'bbX' && State.hiddenCharts.has('plotBBX')) isHidden = true;
+                    if (m.id === 'bbY' && State.hiddenCharts.has('plotBBY')) isHidden = true;
+                    
+                    if (!isHidden) {
+                        const hasT1 = m.t1 !== null;
+                        const hasT2 = m.t2 !== null;
+                        const hasT3 = m.t3 !== null;
+                        const pct1 = m.totalValid > 0 ? ((m.fails1 / m.totalValid) * 100).toFixed(2) : 0;
+                        const pct2 = m.totalValid > 0 ? ((m.fails2 / m.totalValid) * 100).toFixed(2) : 0;
+                        const pct3 = m.totalValid > 0 ? ((m.fails3 / m.totalValid) * 100).toFixed(2) : 0;
+                        tableData.push([
+                            m.name,
+                            `${m.avg.toFixed(3)} ${m.unit}`,
+                            hasT1 ? `±${m.t1}` : '-',
+                            hasT1 ? `${m.fails1}/${m.totalValid} (${pct1}%)` : '-',
+                            hasT2 ? `±${m.t2}` : '-',
+                            hasT2 ? `${m.fails2}/${m.totalValid} (${pct2}%)` : '-',
+                            hasT3 ? `±${m.t3}` : '-',
+                            hasT3 ? `${m.fails3}/${m.totalValid} (${pct3}%)` : '-'
+                        ]);
+                    }
                 });
 
                 if (tableData.length > 0) {
                     doc.autoTable({
                         startY: cursorY,
-                        head: [['Metric', 'Average', 'Tol 1', 'Fails 1', 'Tol 2', 'Fails 2']],
+                        head: [['Metric', 'Avg', 'T1', 'F1', 'T2', 'F2', 'T3', 'F3']],
                         body: tableData,
                         theme: 'grid',
                         headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', halign: 'center' },
@@ -1899,12 +2095,14 @@
                             0: { fontStyle: 'bold' },
                             1: { halign: 'center' },
                             2: { halign: 'center' },
-                            3: { halign: 'center', textColor: [245, 158, 11] }, // amber-500
+                            3: { halign: 'center', textColor: [202, 138, 4] },
                             4: { halign: 'center' },
-                            5: { halign: 'center', textColor: [239, 68, 68] }  // red-500
+                            5: { halign: 'center', textColor: [234, 88, 12] },
+                            6: { halign: 'center' },
+                            7: { halign: 'center', textColor: [220, 38, 38] }
                         },
                         alternateRowStyles: { fillColor: [248, 250, 252] },
-                        styles: { fontSize: 9, cellPadding: 4, textColor: [51, 65, 85] },
+                        styles: { fontSize: 8, cellPadding: 3, textColor: [51, 65, 85] },
                         margin: { top: 42, left: margin, right: margin }
                     });
                     cursorY = doc.lastAutoTable.finalY + 15;
@@ -1923,7 +2121,7 @@
                     { id: 'plotAngle', title: 'Lattice Angle', h: 80 },
                     { id: 'plotBBX', title: 'Aperture Widths', h: 80 },
                     { id: 'plotBBY', title: 'Aperture Heights', h: 80 }
-                ];
+                ].filter(p => p.id === 'plotOverview' || !State.hiddenCharts.has(p.id));
                 
                 for(let i=1; i<=State.dimensionCharts; i++){
                     const chartDivId = `dimChart_${i}`;
@@ -1952,18 +2150,55 @@
                     const relatedMetric = Object.values(State.metricsData).find(m => m.name === p.title || p.title.includes(m.name));
                     if (relatedMetric) {
                         let statText = `Avg: ${relatedMetric.avg.toFixed(3)}${relatedMetric.unit}`;
-                        if (relatedMetric.t1 !== null) statText += `   |   T1 (±${relatedMetric.t1}): ${relatedMetric.fails1}/${relatedMetric.totalValid} fails`;
-                        if (relatedMetric.t2 !== null) statText += `   |   T2 (±${relatedMetric.t2}): ${relatedMetric.fails2}/${relatedMetric.totalValid} fails`;
-                        doc.setFontSize(10);
+                        if (relatedMetric.t1 !== null) {
+                            let pct1 = relatedMetric.totalValid > 0 ? ((relatedMetric.fails1 / relatedMetric.totalValid) * 100).toFixed(2) : "0.00";
+                            statText += `  |  T1 (±${relatedMetric.t1}): ${relatedMetric.fails1}/${relatedMetric.totalValid} (${pct1}%)`;
+                        }
+                        if (relatedMetric.t2 !== null) {
+                            let pct2 = relatedMetric.totalValid > 0 ? ((relatedMetric.fails2 / relatedMetric.totalValid) * 100).toFixed(2) : "0.00";
+                            statText += `  |  T2 (±${relatedMetric.t2}): ${relatedMetric.fails2}/${relatedMetric.totalValid} (${pct2}%)`;
+                        }
+                        if (relatedMetric.t3 !== null) {
+                            let pct3 = relatedMetric.totalValid > 0 ? ((relatedMetric.fails3 / relatedMetric.totalValid) * 100).toFixed(2) : "0.00";
+                            statText += `  |  T3 (±${relatedMetric.t3}): ${relatedMetric.fails3}/${relatedMetric.totalValid} (${pct3}%)`;
+                        }
+                        doc.setFontSize(9);
                         doc.setFont("helvetica", "normal");
                         doc.setTextColor(100, 116, 139);
                         doc.text(statText, margin, cursorY + 6);
+                    } else if (p.id === 'plotOverview') {
+                        let legX = margin;
+                        let legY = cursorY + 6;
+                        
+                        const drawLegItem = (color, label, isCentroid) => {
+                            doc.setFillColor(color);
+                            if (isCentroid) {
+                                doc.rect(legX, legY - 2.5, 3, 3, 'F');
+                            } else {
+                                doc.circle(legX + 1.5, legY - 1, 1.5, 'F');
+                            }
+                            doc.setFontSize(9);
+                            doc.setFont("helvetica", "normal");
+                            doc.setTextColor(100, 116, 139);
+                            doc.text(label, legX + 5, legY);
+                            legX += doc.getTextWidth(label) + 12;
+                        };
+
+                        const baseColor = document.getElementById('inpMarkerColor').value || '#3b82f6';
+                        const centroidColor = document.getElementById('inpCentroidColor').value || '#94a3b8';
+                        const highlightFails = document.getElementById('chkHighlightTol').checked;
+
+                        drawLegItem(baseColor, 'Normal Points', false);
+                        drawLegItem(centroidColor, 'Centroid', true);
+                        if (highlightFails) {
+                            drawLegItem('#eab308', 'T1', false);
+                            drawLegItem('#f97316', 'T2', false);
+                            drawLegItem('#ef4444', 'T3', false);
+                        }
                     }
                     cursorY += 10; 
                     
-                    // Clone Layout & Increase scaling exclusively for the PDF rendering pass
                     const exportLayout = JSON.parse(JSON.stringify(plotEl.layout || {}));
-                    
                     const scaleFont = (ax) => {
                         if(!ax) return;
                         ax.title = ax.title || {};
@@ -1974,7 +2209,6 @@
 
                     scaleFont(exportLayout.xaxis);
                     scaleFont(exportLayout.yaxis);
-                    
                     if(exportLayout.scene) {
                         scaleFont(exportLayout.scene.xaxis);
                         scaleFont(exportLayout.scene.yaxis);
@@ -1982,7 +2216,6 @@
                     }
 
                     exportLayout.margin = { l: 160, r: 50, b: 160, t: 20 };
-                    // Force a consistent white theme layout regardless of active browser Dark Mode
                     exportLayout.paper_bgcolor = '#ffffff';
                     exportLayout.plot_bgcolor = '#f8fafc';
                     exportLayout.font = { ...exportLayout.font, color: '#334155' };
@@ -1991,37 +2224,34 @@
                     const pxWidth = 2000; 
                     const pxHeight = Math.round((p.h / printWidth) * pxWidth);
                     
-                    // Render image detached from DOM to prevent visual flickering
                     const imgUrl = await Plotly.toImage({data: plotEl.data, layout: exportLayout}, { format: 'jpeg', width: pxWidth, height: pxHeight });
                     
                     doc.addImage(imgUrl, 'JPEG', margin, cursorY, printWidth, p.h);
-                    doc.setDrawColor(226, 232, 240);
+                    
+                    // Render thin distinct chart frame
+                    doc.setDrawColor(100, 116, 139); // Slate-500
+                    doc.setLineWidth(0.3);
                     doc.rect(margin, cursorY, printWidth, p.h);
                     
                     cursorY += p.h + 15; 
                 }
 
-                // Append Pagination Headers & Footers (Dynamic Company Name Included)
                 const pageCount = doc.internal.getNumberOfPages();
                 for(let i = 1; i <= pageCount; i++) {
                     doc.setPage(i);
                     
-                    // Header Background
                     doc.setFillColor(accent.r, accent.g, accent.b);
                     doc.rect(0, 0, pageWidth, 12, 'F');
                     
-                    // Title
                     doc.setTextColor(255, 255, 255);
                     doc.setFontSize(14);
                     doc.setFont("helvetica", "bold");
                     doc.text(companyName.toUpperCase(), margin, 8);
                     
-                    // Subtitle
                     doc.setFontSize(10);
                     doc.setFont("helvetica", "normal");
                     doc.text("Aperture Tolerance Report", pageWidth - margin, 8, { align: 'right' });
 
-                    // Logo
                     if (State.logoDataUrl) {
                         const img = UI.logoPreview;
                         let logoH = 15;
@@ -2036,7 +2266,6 @@
                         doc.addImage(State.logoDataUrl, State.logoFormat, logoX, logoY, logoW, logoH);
                     }
 
-                    // Metadata
                     doc.setTextColor(30, 41, 59);
                     doc.setFontSize(10);
                     
@@ -2058,14 +2287,12 @@
                         doc.text(comments, margin + 13, 26);
                     }
 
-                    // Header Bottom Border Line
                     doc.setDrawColor(accent.r, accent.g, accent.b);
                     doc.setLineWidth(0.4);
                     doc.line(margin, 32, pageWidth - margin, 32);
 
-                    // Footer (Uses companyName dynamically)
                     doc.setFontSize(9);
-                    doc.setTextColor(148, 163, 184); // slate-400
+                    doc.setTextColor(148, 163, 184);
                     doc.setFont("helvetica", "normal");
                     doc.text(`${companyName}  |  https://mfo78.github.io/O-Detect-Reader/  |  Date: ${new Date().toLocaleDateString()}  |  Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
                 }
@@ -2099,7 +2326,6 @@
             resizeObserver.observe(document.getElementById('cardOverview'));
         }
 
-        // Initialize Defaults
         document.addEventListener('DOMContentLoaded', () => {
             updateLayoutMode();
             updateAllChartsTheme();
