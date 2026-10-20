@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aperture Tolerance Analyzer - AF Engineering Tools</title>
+    <title>Aperture Tolerance Analyzer - AF ENGINEERING TOOLS</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -35,7 +35,7 @@
         .dark .glass-panel { background: rgba(30, 41, 59, 0.95); border-color: #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }
         
         /* Enforce minimum sizing for the newly resizable 3D overview panel */
-        #cardOverview { min-height: 250px; min-width: 300px; }
+        #cardOverview { min-height: 250px; min-width: 300px; max-width: 90vw; max-height: 90vh; }
         
         /* Compact numerical inputs for the chart controls */
         .chart-controls input[type="number"] { width: 4rem; font-size: 0.75rem; padding: 0.25rem; }
@@ -43,7 +43,6 @@
 </head>
 <body class="h-screen w-full flex flex-col md:flex-row overflow-hidden text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
 
-    <!-- Sidebar Controls -->
     <aside id="appSidebar" class="w-full md:w-80 h-full glass-panel flex flex-col z-10 border-r border-slate-200 dark:border-slate-700 shrink-0 transition-all duration-300">
         <div class="p-5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex justify-between items-center transition-colors">
             <div>
@@ -51,7 +50,7 @@
                     <i class="fa-solid fa-layer-group text-blue-600 dark:text-blue-400"></i>
                     Aperture Tolerance Analyzer
                 </h1>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
+                <p id="sidebarCompanyText" class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
             </div>
             <button id="btnThemeToggle" onclick="toggleTheme()" class="text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 p-2.5 rounded-full transition-colors focus:outline-none">
                 <i class="fa-solid fa-moon dark:hidden"></i>
@@ -80,7 +79,6 @@
                 </div>
             </div>
 
-            <!-- Data Source -->
             <div class="space-y-3">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">1. Data Source</h2>
                 <div>
@@ -98,7 +96,6 @@
                 </button>
             </div>
 
-            <!-- Configuration -->
             <div class="space-y-3">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">2. Configuration</h2>
                 <div>
@@ -132,7 +129,26 @@
             <!-- Export Section -->
             <div id="exportPanel" class="space-y-3 hidden border-t border-slate-200 dark:border-slate-700 pt-5 mt-2">
                 <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">3. Export</h2>
-                <button id="btnDownloadPDF" class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
+                
+                <div class="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded border border-slate-200 dark:border-slate-700">
+                    <label class="block text-xs font-medium mb-1.5 text-slate-700 dark:text-slate-300">Company Name</label>
+                    <input type="text" id="inpCompanyName" placeholder="AF ENGINEERING TOOLS" class="block w-full text-sm p-1.5 mb-3 border border-slate-300 dark:border-slate-600 rounded-md dark:bg-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500">
+
+                    <label class="block text-xs font-medium mb-1.5 text-slate-700 dark:text-slate-300">Report Theme (Accent Color)</label>
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="color" id="inpAccentColor" value="#276193" class="w-7 h-7 rounded cursor-pointer border border-slate-300 dark:border-slate-600 p-0 shadow-sm" title="Accent color for PDF headers">
+                        <span class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Header Base Color</span>
+                    </div>
+
+                    <label class="block text-xs font-medium mb-1.5 text-slate-700 dark:text-slate-300 border-t border-slate-200 dark:border-slate-600 pt-2">Custom Report Logo (Optional)</label>
+                    <input type="file" id="inpLogoUpload" accept=".png,.jpg,.jpeg" class="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-slate-200 dark:file:bg-slate-700 file:text-slate-700 dark:file:text-slate-200 hover:file:bg-slate-300 dark:hover:file:bg-slate-600 cursor-pointer">
+                    <div id="logoPreviewContainer" class="hidden mt-2 p-1.5 border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-800 flex justify-between items-center shadow-sm">
+                        <img id="logoPreview" src="" class="max-h-8 max-w-[120px] object-contain">
+                        <button id="btnRemoveLogo" class="text-slate-400 hover:text-red-500 px-2 py-0.5 transition-colors" title="Remove Logo"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+
+                <button id="btnDownloadPDF" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-file-pdf"></i> Download PDF Report
                 </button>
             </div>
@@ -171,7 +187,7 @@
 
         <div id="layoutWrapper" class="flex flex-col gap-6 w-full min-h-full relative">
             <!-- 3D Overview Chart -->
-            <div class="glass-panel rounded-lg p-4 shadow-sm w-full hidden flex-col transition-all duration-300" id="cardOverview">
+            <div class="glass-panel rounded-lg p-4 shadow-sm w-full hidden flex-col transition-colors" id="cardOverview">
                 <div class="flex flex-col xl:flex-row xl:justify-between xl:items-center border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-4 shrink-0">
                     <h3 class="text-lg font-semibold flex items-center shrink-0 dark:text-slate-100">
                         <i class="fa-solid fa-cube text-slate-400 dark:text-slate-500 mr-2"></i> 3D Array Overview
@@ -230,9 +246,9 @@
                 </div>
             </div>
 
-            <div id="chartsScrollContainer" class="flex flex-col gap-6 w-full transition-all duration-300">
+            <div id="chartsScrollContainer" class="flex flex-col gap-6 w-full transition-colors">
                 <!-- Stepping Charts (X, Y, Angle) -->
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls transition-all duration-300" id="cardSteps">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 hidden chart-controls transition-colors" id="cardSteps">
                     
                     <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
@@ -335,7 +351,7 @@
                 </div>
 
                 <!-- Bounding Box Charts (Width and Height) -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls" id="cardBB">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden chart-controls transition-colors" id="cardBB">
                     
                     <div class="glass-panel rounded-lg p-4 shadow-sm flex flex-col w-full">
                         <div class="flex flex-col items-start border-b border-slate-100 dark:border-slate-700 pb-2 mb-2 gap-3 w-full">
@@ -405,7 +421,7 @@
                 </div>
 
                 <!-- Notable Dimensions Section -->
-                <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls transition-all duration-300 w-full" id="cardDimensions">
+                <div class="glass-panel rounded-lg p-4 shadow-sm hidden chart-controls transition-colors w-full" id="cardDimensions">
                     <div class="flex flex-col justify-between border-b border-slate-100 dark:border-slate-700 pb-4 mb-4 gap-4 w-full">
                         <div class="w-full break-words min-w-0">
                             <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -506,7 +522,9 @@
             metricFails: {},
             activeFailFilters: new Set(),
             knownMetrics: new Set(),
-            metricsData: {}
+            metricsData: {},
+            logoDataUrl: null,
+            logoFormat: null
         };
 
         const UI = {
@@ -546,9 +564,17 @@
             inpMarkerColor: document.getElementById('inpMarkerColor'),
             inpCentroidColor: document.getElementById('inpCentroidColor'),
             inpMarkerSize: document.getElementById('inpMarkerSize'),
-            inpCentroidSize: document.getElementById('inpCentroidSize')
+            inpCentroidSize: document.getElementById('inpCentroidSize'),
+            inpLogoUpload: document.getElementById('inpLogoUpload'),
+            logoPreviewContainer: document.getElementById('logoPreviewContainer'),
+            logoPreview: document.getElementById('logoPreview'),
+            btnRemoveLogo: document.getElementById('btnRemoveLogo'),
+            inpCompanyName: document.getElementById('inpCompanyName'),
+            inpAccentColor: document.getElementById('inpAccentColor'),
+            sidebarCompanyText: document.getElementById('sidebarCompanyText')
         };
 
+        // Event Listeners Registration
         UI.fileInput.addEventListener('change', handleFileUpload);
         UI.btnLoadSample.addEventListener('click', generateSampleData);
         UI.btnProcess.addEventListener('click', processData);
@@ -556,6 +582,15 @@
         UI.btnAddDimension.addEventListener('click', addDimensionChart);
         UI.btnEqualAxes.addEventListener('click', toggleEqualAxes);
         UI.btnDownloadPDF.addEventListener('click', downloadPDFReport);
+        UI.inpLogoUpload.addEventListener('change', handleLogoUpload);
+        UI.btnRemoveLogo.addEventListener('click', removeLogo);
+
+        // Dynamically update the app title and sidebar when company name changes
+        UI.inpCompanyName.addEventListener('input', (e) => {
+            const companyName = e.target.value.trim() || "AF ENGINEERING TOOLS";
+            UI.sidebarCompanyText.innerText = companyName.toUpperCase();
+            document.title = `Aperture Tolerance Analyzer - ${companyName}`;
+        });
 
         UI.btnToggleSidebar.addEventListener('click', () => {
             UI.appSidebar.classList.toggle('hidden');
@@ -568,6 +603,7 @@
 
         function updateLayoutMode() {
             const mode = UI.selLayoutMode.value;
+            const mainContainer = document.getElementById('mainContainer');
             const wrapper = UI.layoutWrapper;
             const overview = UI.cardOverview;
             const scrollContainer = UI.chartsScrollContainer;
@@ -589,47 +625,66 @@
                 bb.classList.remove('hidden');
             }
 
-            // Reset base layout classes. Adding 'overflow-hidden' enables standard CSS resize handles.
-            overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-all duration-300 z-30 overflow-hidden';
-            scrollContainer.className = 'flex flex-col gap-6 transition-all duration-300';
-            steps.className = 'grid gap-6 chart-controls transition-all duration-300';
-            bb.className = 'grid gap-6 chart-controls transition-all duration-300';
+            // Reset base layout classes. Transitioning colors only prevents resize lag.
+            overview.className = 'glass-panel rounded-lg p-4 shadow-sm flex flex-col transition-colors z-30 overflow-hidden shrink-0';
+            scrollContainer.className = 'flex flex-col gap-6 transition-colors w-full';
+            steps.className = 'grid gap-6 chart-controls transition-colors';
+            bb.className = 'grid gap-6 chart-controls transition-colors';
             
-            // Clean inline sticky top and manual resize dimension styles if any 
+            // Clean inline manual resize dimension styles if any 
             overview.style.top = '';
             overview.style.width = '';
             overview.style.height = '';
             
-            // Apply mode-specific layouts
-            if (mode === 'grid') {
+            // Apply mode-specific layouts utilizing independent interior scrolling
+            if (mode === 'grid' || mode === 'full') {
+                // PAGE-LEVEL SCROLLING: The whole window scrolls normally
+                mainContainer.classList.add('overflow-y-auto');
+                mainContainer.classList.remove('overflow-hidden');
                 wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative';
-                overview.classList.add('w-full', 'resize-y');
-                scrollContainer.classList.add('w-full');
-                steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
-                bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
-                chartWrapper.className = 'relative w-full max-w-[900px] aspect-square mx-auto flex-1 mt-2';
-            } else if (mode === 'full') {
-                wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative';
-                overview.classList.add('w-full', 'resize-y');
-                scrollContainer.classList.add('w-full');
-                steps.classList.add('grid-cols-1');
-                bb.classList.add('grid-cols-1');
-                chartWrapper.className = 'relative w-full flex-1 mt-2 min-h-[60vh]';
-            } else if (mode === 'split') {
-                wrapper.className = 'flex flex-col xl:flex-row gap-6 w-full min-h-full relative items-start';
-                // self-start prevents flexbox from stretching the item, which previously broke the sticky behavior
-                overview.classList.add('xl:w-1/2', 'xl:sticky', 'top-20', 'self-start', 'xl:h-[calc(100vh-7rem)]', 'shadow-xl', 'resize-x');
-                scrollContainer.classList.add('w-full', 'xl:w-1/2');
-                steps.classList.add('grid-cols-1');
-                bb.classList.add('grid-cols-1');
-                chartWrapper.className = 'relative w-full flex-1 mt-2 min-h-[300px] h-full';
-            } else if (mode === 'pinned-top') {
-                wrapper.className = 'flex flex-col gap-6 w-full min-h-full relative items-start';
-                overview.classList.add('w-full', 'sticky', 'top-20', 'self-start', 'h-[50vh]', 'shadow-xl', 'resize-y');
-                scrollContainer.classList.add('w-full');
-                steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
-                bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
-                chartWrapper.className = 'relative w-full flex-1 mt-2 h-full';
+                
+                if (mode === 'grid') {
+                    overview.classList.add('w-full', 'resize-y');
+                    overview.style.height = '45vh'; // Give a default height to prevent collapsing
+                    overview.style.minHeight = '300px';
+                    scrollContainer.classList.add('w-full');
+                    steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
+                    bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
+                    chartWrapper.className = 'relative w-full max-w-[900px] aspect-square mx-auto flex-1 mt-2';
+                } else if (mode === 'full') {
+                    overview.classList.add('w-full', 'resize-y');
+                    overview.style.height = '60vh';
+                    overview.style.minHeight = '400px';
+                    scrollContainer.classList.add('w-full');
+                    steps.classList.add('grid-cols-1');
+                    bb.classList.add('grid-cols-1');
+                    chartWrapper.className = 'relative w-full flex-1 mt-2';
+                }
+            } else {
+                // CONTAINER-LEVEL SCROLLING (PINNED): Main page locks, charts scroll independently
+                mainContainer.classList.remove('overflow-y-auto');
+                mainContainer.classList.add('overflow-hidden'); // Locks the viewport
+                
+                // wrapper flex-1 min-h-0 allows it to strictly fill the remaining height below toolbar
+                wrapper.className = 'flex flex-col lg:flex-row gap-6 w-full flex-1 min-h-0 relative items-start';
+                
+                // Dedicate scrolling specifically to the charts container
+                scrollContainer.classList.add('flex-1', 'h-full', 'overflow-y-auto', 'custom-scrollbar', 'pr-2', 'pb-10');
+                
+                if (mode === 'split') {
+                    // Split screen: overview takes left side, scrollContainer takes right side
+                    overview.classList.add('w-full', 'lg:w-[45%]', 'h-[40vh]', 'lg:h-full', 'resize-y', 'lg:resize-x');
+                    steps.classList.add('grid-cols-1');
+                    bb.classList.add('grid-cols-1');
+                    chartWrapper.className = 'relative w-full flex-1 mt-2 h-full';
+                } else if (mode === 'pinned-top') {
+                    // Pinned top: wrapper must be forced to column alignment
+                    wrapper.classList.remove('lg:flex-row');
+                    overview.classList.add('w-full', 'h-[45vh]', 'resize-y');
+                    steps.classList.add('grid-cols-1', 'xl:grid-cols-3');
+                    bb.classList.add('grid-cols-1', 'lg:grid-cols-2');
+                    chartWrapper.className = 'relative w-full flex-1 mt-2 h-full';
+                }
             }
             
             // Force Plotly to recalculate bounds to match new absolute container
@@ -692,6 +747,38 @@
             document.querySelectorAll('[id^="dimChart_"]').forEach(chart => {
                 if (chart.layout) Plotly.relayout(chart.id, layoutUpdate);
             });
+        }
+
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const isPNG = file.type === 'image/png';
+            const isJPG = file.type === 'image/jpeg' || file.type === 'image/jpg';
+            
+            if (!isPNG && !isJPG) {
+                showNotification("Please upload a valid PNG or JPG image.", "error");
+                UI.inpLogoUpload.value = '';
+                return;
+            }
+
+            State.logoFormat = isPNG ? 'PNG' : 'JPEG';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                State.logoDataUrl = e.target.result;
+                UI.logoPreview.src = State.logoDataUrl;
+                UI.logoPreviewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogo() {
+            State.logoDataUrl = null;
+            State.logoFormat = null;
+            UI.inpLogoUpload.value = '';
+            UI.logoPreview.src = '';
+            UI.logoPreviewContainer.classList.add('hidden');
         }
 
         function showNotification(msg, type = 'info') {
@@ -800,6 +887,9 @@
                 parseRawText(text);
                 UI.btnProcess.classList.add('animate-pulse');
                 setTimeout(() => UI.btnProcess.classList.remove('animate-pulse'), 1500);
+                
+                // Process the loaded file automatically
+                processData();
             };
             reader.readAsText(file);
         }
@@ -1738,6 +1828,15 @@
             await Plotly.downloadImage(plotId, { format: 'png', filename: safeFilename });
         }
 
+        function hexToRgb(hex) {
+            var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 39, g: 97, b: 147 }; // Fallback to #276193
+        }
+
         async function downloadPDFReport() {
             if (!window.jspdf) {
                 showNotification("PDF library is still loading. Please try again in a moment.", "error");
@@ -1756,56 +1855,17 @@
                 const pageHeight = doc.internal.pageSize.getHeight();
                 const margin = 15;
                 const printWidth = pageWidth - (margin * 2);
-                let cursorY = 0;
+                let cursorY = 42;
 
-                // --- HEADER SECTION ---
-                doc.setFillColor(15, 23, 42); 
-                doc.rect(0, 0, pageWidth, 35, 'F');
-                
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(22);
-                doc.setFont("helvetica", "bold");
-                doc.text("AF ENGINEERING TOOLS", margin, 18);
-                
-                doc.setFontSize(12);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(148, 163, 184); // slate-400
-                doc.text("APERTURE TOLERANCE REPORT", margin, 26);
-                
-                doc.setFontSize(10);
-                doc.setTextColor(255, 255, 255);
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, pageWidth - margin, 20, { align: 'right' });
-                
-                cursorY = 45;
-
-                // --- METADATA SECTION ---
-                doc.setTextColor(15, 23, 42);
-                doc.setFontSize(14);
-                doc.setFont("helvetica", "bold");
-                doc.text("Part Information", margin, cursorY);
-                cursorY += 6;
-                
-                doc.setFontSize(10);
-                doc.setFont("helvetica", "normal");
-                doc.setTextColor(51, 65, 85);
+                // Grab user-supplied Company Name (defaults if empty)
+                const companyName = UI.inpCompanyName.value.trim() || "AF ENGINEERING TOOLS";
+                const accentHex = UI.inpAccentColor.value || '#276193';
+                const accent = hexToRgb(accentHex);
                 const partNo = document.getElementById('inpPartNum').value || "N/A";
                 const serialNo = document.getElementById('inpSerialNum').value || "N/A";
-                doc.text(`Part Number: ${partNo}`, margin, cursorY);
-                doc.text(`Serial Number: ${serialNo}`, margin + 80, cursorY);
-                cursorY += 6;
-                
-                const comments = document.getElementById('inpComments')?.value;
-                if (comments) {
-                    doc.setFont("helvetica", "italic");
-                    const splitComments = doc.splitTextToSize(`Notes: ${comments}`, printWidth);
-                    doc.text(splitComments, margin, cursorY);
-                    cursorY += (5 * splitComments.length);
-                }
-                
-                cursorY += 4;
-                doc.setDrawColor(226, 232, 240); // slate-200
-                doc.line(margin, cursorY, pageWidth - margin, cursorY);
-                cursorY += 8;
+                let comments = document.getElementById('inpComments')?.value || "";
+                comments = comments.replace(/\n/g, ' '); 
+                if (comments.length > 120) comments = comments.substring(0, 117) + '...';
 
                 // --- SUMMARY TABLE ---
                 doc.setFontSize(14);
@@ -1845,7 +1905,7 @@
                         },
                         alternateRowStyles: { fillColor: [248, 250, 252] },
                         styles: { fontSize: 9, cellPadding: 4, textColor: [51, 65, 85] },
-                        margin: { left: margin, right: margin }
+                        margin: { top: 42, left: margin, right: margin }
                     });
                     cursorY = doc.lastAutoTable.finalY + 15;
                 } else {
@@ -1881,7 +1941,7 @@
                     
                     if (cursorY + p.h + 25 > pageHeight - margin - 10) {
                         doc.addPage();
-                        cursorY = margin + 10;
+                        cursorY = 42;
                     }
                     
                     doc.setFontSize(14);
@@ -1941,13 +2001,73 @@
                     cursorY += p.h + 15; 
                 }
 
-                // Append Pagination Footers
+                // Append Pagination Headers & Footers (Dynamic Company Name Included)
                 const pageCount = doc.internal.getNumberOfPages();
                 for(let i = 1; i <= pageCount; i++) {
                     doc.setPage(i);
+                    
+                    // Header Background
+                    doc.setFillColor(accent.r, accent.g, accent.b);
+                    doc.rect(0, 0, pageWidth, 12, 'F');
+                    
+                    // Title
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFontSize(14);
+                    doc.setFont("helvetica", "bold");
+                    doc.text(companyName.toUpperCase(), margin, 8);
+                    
+                    // Subtitle
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "normal");
+                    doc.text("Aperture Tolerance Report", pageWidth - margin, 8, { align: 'right' });
+
+                    // Logo
+                    if (State.logoDataUrl) {
+                        const img = UI.logoPreview;
+                        let logoH = 15;
+                        let logoW = 15;
+                        if (img.naturalHeight > 0) {
+                            const aspect = img.naturalWidth / img.naturalHeight;
+                            logoW = logoH * aspect;
+                            if (logoW > 50) { logoW = 50; logoH = logoW / aspect; }
+                        }
+                        const logoX = pageWidth - margin - logoW;
+                        const logoY = 16;
+                        doc.addImage(State.logoDataUrl, State.logoFormat, logoX, logoY, logoW, logoH);
+                    }
+
+                    // Metadata
+                    doc.setTextColor(30, 41, 59);
+                    doc.setFontSize(10);
+                    
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Part No:", margin, 20);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(partNo, margin + 17, 20);
+                    
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Serial No:", margin + 65, 20);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(serialNo, margin + 85, 20);
+                    
+                    if (comments) {
+                        doc.setFont("helvetica", "bold");
+                        doc.text("Notes:", margin, 26);
+                        doc.setFont("helvetica", "italic");
+                        doc.setTextColor(71, 85, 105);
+                        doc.text(comments, margin + 13, 26);
+                    }
+
+                    // Header Bottom Border Line
+                    doc.setDrawColor(accent.r, accent.g, accent.b);
+                    doc.setLineWidth(0.4);
+                    doc.line(margin, 32, pageWidth - margin, 32);
+
+                    // Footer (Uses companyName dynamically)
                     doc.setFontSize(9);
                     doc.setTextColor(148, 163, 184); // slate-400
-                    doc.text(`AF Engineering Tools  |  Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`${companyName}  |  https://mfo78.github.io/O-Detect-Reader/  |  Date: ${new Date().toLocaleDateString()}  |  Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
                 }
 
                 const fnPart = partNo !== "N/A" ? partNo + '_' : '';
