@@ -204,7 +204,7 @@
                             <button onclick="set3DView('xz')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Front (XZ)">XZ</button>
                             <button onclick="set3DView('yz')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Side (YZ)">YZ</button>
                             <button onclick="set3DView('iso')" class="bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors" title="Isometric">Iso</button>
-                            <button id="btnEqualAxes" class="bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-700 dark:text-slate-200 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors ml-1" title="Toggle Equal Axes (1:1:1)">1:1:1</button>
+                            <button id="btnEqualAxes" class="bg-blue-100 dark:bg-blue-900/50 hover:bg-slate-300 dark:hover:bg-slate-500 text-blue-700 dark:text-blue-300 px-2 py-1 rounded border border-slate-300 dark:border-slate-600 transition-colors ml-1" title="Toggle Equal Axes (1:1:1)">1:1:1</button>
                         </div>
 
                         <div class="flex flex-wrap items-center border-r border-slate-300 dark:border-slate-600 pr-2 gap-2">
@@ -216,7 +216,7 @@
                             </div>
                             <div class="flex items-center gap-1" title="Marker Size">
                                 <span class="text-slate-500 dark:text-slate-400">Pts:</span>
-                                <input type="number" id="inpMarkerSize" value="2" min="1" max="15" class="w-10 p-1 border border-slate-300 dark:border-slate-600 rounded text-center dark:bg-slate-700 dark:text-white" onchange="update3DOverview()">
+                                <input type="number" id="inpMarkerSize" value="1" min="1" max="15" class="w-10 p-1 border border-slate-300 dark:border-slate-600 rounded text-center dark:bg-slate-700 dark:text-white" onchange="update3DOverview()">
                             </div>
                             <div class="flex items-center gap-1" title="Centroid Marker Size">
                                 <span class="text-slate-500 dark:text-slate-400">Ctrs:</span>
@@ -230,7 +230,7 @@
                                 <span class="text-slate-600 dark:text-slate-300 text-xs font-medium">Labels</span>
                             </label>
                             <label class="flex items-center gap-1 cursor-pointer" title="Highlight Out-of-Tolerance Apertures">
-                                <input type="checkbox" id="chkHighlightTol" class="rounded text-red-500 focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600" onchange="update3DOverview()">
+                                <input type="checkbox" id="chkHighlightTol" class="rounded text-red-500 focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600" onchange="update3DOverview()" checked>
                                 <span class="text-slate-600 dark:text-slate-300 text-xs font-medium">Fails</span>
                             </label>
                             <!-- Fail Filter Dropdown -->
@@ -546,7 +546,7 @@
             refStep: {dx: 0, dy: 0},
             latticeVector: {dx: 1, dy: 0},
             outOfTolApertures: { notice: new Set(), warn: new Set(), critical: new Set() },
-            overviewView: 'iso',
+            overviewView: 'xy',
             // Extended tracking stats
             metricFails: {},
             activeFailFilters: new Set(),
@@ -627,7 +627,7 @@
 
         UI.selLayoutMode.addEventListener('change', updateLayoutMode);
 
-        let isEqualAxes = false;
+        let isEqualAxes = true;
 
         function updateLayoutMode() {
             const mode = UI.selLayoutMode.value;
@@ -2220,6 +2220,18 @@
                     exportLayout.plot_bgcolor = '#f8fafc';
                     exportLayout.font = { ...exportLayout.font, color: '#334155' };
                     if (exportLayout.legend) exportLayout.legend.font = { size: 20, color: '#334155' };
+
+                    if (p.id === 'plotOverview') {
+                        exportLayout.paper_bgcolor = '#f1f5f9';
+                        exportLayout.plot_bgcolor = '#e2e8f0';
+                        if (exportLayout.xaxis) exportLayout.xaxis.gridcolor = '#ffffff';
+                        if (exportLayout.yaxis) exportLayout.yaxis.gridcolor = '#ffffff';
+                        if (exportLayout.scene) {
+                            if (exportLayout.scene.xaxis) { exportLayout.scene.xaxis.backgroundcolor = '#e2e8f0'; exportLayout.scene.xaxis.gridcolor = '#ffffff'; }
+                            if (exportLayout.scene.yaxis) { exportLayout.scene.yaxis.backgroundcolor = '#e2e8f0'; exportLayout.scene.yaxis.gridcolor = '#ffffff'; }
+                            if (exportLayout.scene.zaxis) { exportLayout.scene.zaxis.backgroundcolor = '#e2e8f0'; exportLayout.scene.zaxis.gridcolor = '#ffffff'; }
+                        }
+                    }
 
                     const pxWidth = 2000; 
                     const pxHeight = Math.round((p.h / printWidth) * pxWidth);
