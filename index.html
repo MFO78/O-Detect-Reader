@@ -169,7 +169,9 @@
             
             <div class="flex items-center gap-3">
                 <button id="btnRestoreCharts" onclick="restoreDefaultCharts()" class="hidden text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mr-2"><i class="fa-solid fa-rotate-left mr-1"></i> Restore Hidden Charts</button>
-                <label class="hidden sm:block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Layout Style:</label>
+                <label class="hidden sm:block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">2D Pts:</label>
+                <input type="number" id="inp2DMarkerSize" value="4" min="1" max="15" class="w-10 text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 shadow-sm" onchange="update2DCharts()" title="2D Chart Marker Size">
+                <label class="hidden sm:block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider ml-2">Layout Style:</label>
                 <select id="selLayoutMode" class="text-sm p-1.5 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-700 dark:text-white focus:ring-blue-500 focus:border-blue-500 cursor-pointer shadow-sm font-medium">
                     <option value="grid">Grid</option>
                     <option value="full">Full Width (Stack)</option>
@@ -722,6 +724,22 @@
                 zeroLineColor: isDark ? '#475569' : '#cbd5e1'
             };
         }
+
+        function get2DMarkerSize() {
+            const el = document.getElementById('inp2DMarkerSize');
+            return el ? (parseInt(el.value) || 4) : 4;
+        }
+
+        window.update2DCharts = function() {
+            if (State.rawPoints.length === 0) return;
+            renderStepPlots();
+            renderBBPlots();
+            for(let i=1; i<=State.dimensionCharts; i++){
+                if (State.customDims[`dimChart_${i}`]) {
+                    renderCustomDimChart(i);
+                }
+            }
+        };
 
         function updateAllChartsTheme() {
             const theme = getThemeLayout();
@@ -1615,9 +1633,10 @@
             const avgAngle = State.metricsData['angle'].avg;
             const theme = getThemeLayout();
             const hoverTxt = State.targetNeighbors.map((val, i) => val !== null ? `Ap ${i} → Ap ${val}` : '');
+            const mSize = get2DMarkerSize();
 
             const layoutBase = {
-                margin: { l: 50, r: 20, b: 70, t: 20 },
+                margin: { l: 75, r: 20, b: 70, t: 20 },
                 xaxis: { title: 'Aperture Index Map', tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
                 paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor,
                 font: { color: theme.fontColor },
@@ -1627,24 +1646,24 @@
             Plotly.react('plotStepX', [
                 {
                     x: xLabels, y: xData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
-                    hovertemplate: '<b>%{text}</b><br>X-Lattice: <b>%{y:.4f}</b><extra></extra>',
-                    line: { color: '#8b5cf6' }, marker: { size: 6 }, connectgaps: false, name: 'X-Lattice'
+                    hovertemplate: '<b>%{text}</b><br>X-Lattice: <b>%{y:.3f}</b><extra></extra>',
+                    line: { color: '#8b5cf6' }, marker: { size: mSize }, connectgaps: false, name: 'X-Lattice'
                 },
                 getAvgTrace(xLabels, avgX)
             ], {
-                ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                ...layoutBase, yaxis: { title: { text: '[mm]', standoff: 15 }, automargin: true, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor, tickformat: '.3f' },
                 shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepX').value), parseFloat(document.getElementById('inpTol1StepX').value), parseFloat(document.getElementById('inpTol2StepX').value), parseFloat(document.getElementById('inpTol3StepX').value))
             }, {responsive: true});
 
             Plotly.react('plotStepY', [
                 {
                     x: xLabels, y: yData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
-                    hovertemplate: '<b>%{text}</b><br>Y-Lattice: <b>%{y:.4f}</b><extra></extra>',
-                    line: { color: '#10b981' }, marker: { size: 6 }, connectgaps: false, name: 'Y-Lattice'
+                    hovertemplate: '<b>%{text}</b><br>Y-Lattice: <b>%{y:.3f}</b><extra></extra>',
+                    line: { color: '#10b981' }, marker: { size: mSize }, connectgaps: false, name: 'Y-Lattice'
                 },
                 getAvgTrace(xLabels, avgY)
             ], {
-                ...layoutBase, yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                ...layoutBase, yaxis: { title: { text: '[mm]', standoff: 15 }, automargin: true, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor, tickformat: '.3f' },
                 shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomStepY').value), parseFloat(document.getElementById('inpTol1StepY').value), parseFloat(document.getElementById('inpTol2StepY').value), parseFloat(document.getElementById('inpTol3StepY').value))
             }, {responsive: true});
 
@@ -1652,11 +1671,11 @@
                 {
                     x: xLabels, y: angleData, text: hoverTxt, type: 'scatter', mode: 'lines+markers',
                     hovertemplate: '<b>%{text}</b><br>Angle: <b>%{y:.3f}°</b><extra></extra>',
-                    line: { color: '#f59e0b' }, marker: { size: 6 }, connectgaps: false, name: 'Lattice Angle'
+                    line: { color: '#f59e0b' }, marker: { size: mSize }, connectgaps: false, name: 'Lattice Angle'
                 },
                 getAvgTrace(xLabels, avgAngle)
             ], {
-                ...layoutBase, yaxis: { title: 'Angle [deg]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                ...layoutBase, yaxis: { title: { text: 'Angle [deg]', standoff: 15 }, automargin: true, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor, tickformat: '.3f' },
                 shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTol1Angle').value), parseFloat(document.getElementById('inpTol2Angle').value), parseFloat(document.getElementById('inpTol3Angle').value))
             }, {responsive: true});
 
@@ -1674,11 +1693,12 @@
             const avgW = State.metricsData['bbX'].avg;
             const avgH = State.metricsData['bbY'].avg;
             const theme = getThemeLayout();
+            const mSize = get2DMarkerSize();
 
             const layoutBase = {
-                margin: { l: 50, r: 20, b: 70, t: 20 },
+                margin: { l: 75, r: 20, b: 70, t: 20 },
                 xaxis: { title: 'Aperture Index', tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
-                yaxis: { title: '[mm]', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                yaxis: { title: { text: '[mm]', standoff: 15 }, automargin: true, gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor, tickformat: '.3f' },
                 paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor,
                 font: { color: theme.fontColor },
                 showlegend: false
@@ -1687,7 +1707,8 @@
             Plotly.react('plotBBX', [
                 {
                     x: xLabels, y: wData, type: 'scatter', mode: 'lines+markers',
-                    line: { color: '#0ea5e9' }, marker: { size: 6 }, connectgaps: false, name: 'Width'
+                    hovertemplate: '<b>Aperture %{x}</b><br>Width: <b>%{y:.3f}</b><extra></extra>',
+                    line: { color: '#0ea5e9' }, marker: { size: mSize }, connectgaps: false, name: 'Width'
                 },
                 getAvgTrace(xLabels, avgW)
             ], {
@@ -1698,7 +1719,8 @@
             Plotly.react('plotBBY', [
                 {
                     x: xLabels, y: hData, type: 'scatter', mode: 'lines+markers',
-                    line: { color: '#ec4899' }, marker: { size: 6 }, connectgaps: false, name: 'Height'
+                    hovertemplate: '<b>Aperture %{x}</b><br>Height: <b>%{y:.3f}</b><extra></extra>',
+                    line: { color: '#ec4899' }, marker: { size: mSize }, connectgaps: false, name: 'Height'
                 },
                 getAvgTrace(xLabels, avgH)
             ], {
@@ -1743,21 +1765,22 @@
             updateMetricStats(filteredDims, `nomDim_${idx}`, `tol1Dim_${idx}`, `tol2Dim_${idx}`, `tol3Dim_${idx}`, chartDivId, chartData.title, unit);
             const avg = State.metricsData[chartDivId].avg;
             const theme = getThemeLayout();
+            const mSize = get2DMarkerSize();
 
             Plotly.react(chartDivId, [
                 {
                     x: xLabels, y: filteredDims, type: 'scatter', mode: 'lines+markers',
-                    line: { color: lineColor }, marker: { size: 5 }, name: 'Measurement', connectgaps: false,
-                    hovertemplate: `<b>%{x}</b><br>${yAxisTitle}: <b>%{y:.1f}${unit}</b><extra></extra>`
+                    line: { color: lineColor }, marker: { size: mSize }, name: 'Measurement', connectgaps: false,
+                    hovertemplate: `<b>%{x}</b><br>${yAxisTitle.split(' ')[0]}: <b>%{y:.3f}${unit}</b><extra></extra>`
                 },
                 {
                     x: [xLabels[0], xLabels[xLabels.length-1]], y: [avg, avg], type: 'scatter', mode: 'lines',
                     line: { color: '#94a3b8', dash: 'dash', width: 2 }, name: 'Average', hoverinfo: 'skip'
                 }
             ], {
-                margin: { l: 50, r: 20, b: 70, t: 10 },
+                margin: { l: 75, r: 20, b: 70, t: 10 },
                 xaxis: { title: xAxisTitle, tickangle: 45, type: 'category', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
-                yaxis: { title: yAxisTitle, tickformat: '.1f', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
+                yaxis: { title: { text: yAxisTitle, standoff: 15 }, automargin: true, tickformat: '.3f', gridcolor: theme.gridColor, zerolinecolor: theme.zeroLineColor },
                 paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor, font: { color: theme.fontColor }, showlegend: false,
                 shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tol1Dim_${idx}`).value), parseFloat(document.getElementById(`tol2Dim_${idx}`).value), parseFloat(document.getElementById(`tol3Dim_${idx}`).value))
             }, {responsive: true});
