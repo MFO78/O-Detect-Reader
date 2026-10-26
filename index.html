@@ -51,7 +51,7 @@
                     <i class="fa-solid fa-layer-group text-blue-600 dark:text-blue-400"></i>
                     Aperture Tolerance Analyzer
                 </h1>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold">AF ENGINEERING TOOLS</p>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-semibold" id="sidebarCompanyText">AF ENGINEERING TOOLS</p>
             </div>
             <button id="btnThemeToggle" onclick="toggleTheme()" class="text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 p-2.5 rounded-full transition-colors focus:outline-none">
                 <i class="fa-solid fa-moon dark:hidden"></i>
@@ -88,7 +88,19 @@
                     <input type="file" id="fileInput" accept=".txt,.csv" class="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 dark:file:bg-blue-900/30 file:text-blue-700 dark:file:text-blue-400 hover:file:bg-blue-100 dark:hover:file:bg-blue-900/50 cursor-pointer border border-slate-300 dark:border-slate-600 rounded-md">
                     <p class="text-xs text-slate-400 mt-1">Format: X Y Z</p>
                 </div>
-                <div class="relative flex items-center py-2">
+                
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded border border-slate-200 dark:border-slate-700">
+                    <label class="flex items-center gap-1.5 cursor-pointer" title="Flip the sign of all X coordinates globally">
+                        <input type="checkbox" id="chkInvertX" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600" onchange="applyModificationsAndProcess()">
+                        <span class="text-[11px] font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wide">Invert X (-X)</span>
+                    </label>
+                    <label class="flex items-center gap-1.5 cursor-pointer" title="Flip the sign of all Y coordinates globally">
+                        <input type="checkbox" id="chkInvertY" class="rounded text-blue-600 focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600" onchange="applyModificationsAndProcess()">
+                        <span class="text-[11px] font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wide">Invert Y (-Y)</span>
+                    </label>
+                </div>
+
+                <div class="relative flex items-center py-1">
                     <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
                     <span class="flex-shrink-0 mx-4 text-slate-400 text-xs uppercase">or</span>
                     <div class="flex-grow border-t border-slate-300 dark:border-slate-700"></div>
@@ -112,6 +124,15 @@
                 <button id="btnProcess" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md transition-colors text-sm font-semibold shadow-sm flex items-center justify-center gap-2">
                     <i class="fa-solid fa-gears"></i> Process Coordinates
                 </button>
+                <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <button id="btnExportSettings" onclick="exportSettings()" class="py-1.5 px-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded text-xs font-medium border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-download"></i> Export Cfg
+                    </button>
+                    <button onclick="document.getElementById('inpImportSettings').click()" class="py-1.5 px-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded text-xs font-medium border border-slate-300 dark:border-slate-600 flex items-center justify-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-upload"></i> Import Cfg
+                    </button>
+                    <input type="file" id="inpImportSettings" accept=".json" class="hidden" onchange="importSettings(event)">
+                </div>
             </div>
 
             <!-- Summary Panel -->
@@ -534,6 +555,7 @@
 
     <script>
         const State = {
+            originalRawPoints: [], // Store unmodified source points globally
             rawPoints: [],       
             apertures: [],       
             centroids: [],       
@@ -556,7 +578,10 @@
             metricsData: {},
             hiddenCharts: new Set(),
             logoDataUrl: null,
-            logoFormat: null
+            logoFormat: null,
+            // Cross-chart zooming logic
+            active2DCharts: new Set(['plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY']),
+            isSyncingZoom: false
         };
 
         const UI = {
@@ -606,9 +631,246 @@
             sidebarCompanyText: document.getElementById('sidebarCompanyText')
         };
 
+        // Shared zooming synchronization handling
+        function bindZoomSync(plotId) {
+            const el = document.getElementById(plotId);
+            if (!el || el._hasZoomSync) return;
+            
+            el.on('plotly_relayout', (eventData) => {
+                if (State.isSyncingZoom) return;
+                
+                let isAuto = eventData['xaxis.autorange'] === true;
+                let r0, r1;
+                
+                if (eventData['xaxis.range[0]'] !== undefined) {
+                    r0 = eventData['xaxis.range[0]'];
+                    r1 = eventData['xaxis.range[1]'];
+                } else if (eventData['xaxis.range'] !== undefined) {
+                    r0 = eventData['xaxis.range'][0];
+                    r1 = eventData['xaxis.range'][1];
+                } else if (!isAuto) {
+                    return; // Only sync on X-axis changes
+                }
+
+                State.isSyncingZoom = true;
+                const update2D = isAuto ? {'xaxis.autorange': true} : {'xaxis.range': [r0, r1]};
+                const promises = [];
+                
+                // 1. Sync all other 2D charts
+                State.active2DCharts.forEach(id => {
+                    if (id !== plotId) {
+                        const otherEl = document.getElementById(id);
+                        if (otherEl && !State.hiddenCharts.has(id)) {
+                            promises.push(Plotly.relayout(id, update2D).catch(()=>{}));
+                        }
+                    }
+                });
+
+                // 2. Sync 3D overview explicitly mapping X bounds -> Physical Extents of selected indices
+                const overviewEl = document.getElementById('plotOverview');
+                if (overviewEl && State.apertures.length > 0) {
+                    let update3D = {};
+                    
+                    if (isAuto) {
+                        if (State.overviewView === 'iso') {
+                            update3D['scene.xaxis.autorange'] = true;
+                            update3D['scene.yaxis.autorange'] = true;
+                            update3D['scene.zaxis.autorange'] = true;
+                        } else {
+                            update3D['xaxis.autorange'] = true;
+                            update3D['yaxis.autorange'] = true;
+                        }
+                    } else {
+                        let isRaw = false;
+                        if (plotId.startsWith('dimChart_')) {
+                            const cfg = State.customDims[plotId]?.config;
+                            if (cfg && cfg.mode === 'raw_points') isRaw = true;
+                        }
+
+                        let cMinX = Infinity, cMaxX = -Infinity;
+                        let cMinY = Infinity, cMaxY = -Infinity;
+                        let cMinZ = Infinity, cMaxZ = -Infinity;
+                        let foundAny = false;
+
+                        // Identify strictly visible data indices using ceil/floor
+                        let sIdx = Math.max(0, Math.floor(Number(r0)));
+                        let maxIdx = isRaw ? State.rawPoints.length - 1 : State.apertures.length - 1;
+                        let eIdx = Math.min(maxIdx, Math.ceil(Number(r1)));
+
+                        // Bound check
+                        if (sIdx <= eIdx && sIdx >= 0) {
+                            if (isRaw) {
+                                for (let i = sIdx; i <= eIdx; i++) {
+                                    let pt = State.rawPoints[i];
+                                    if (pt) {
+                                        if (pt.x < cMinX) cMinX = pt.x;
+                                        if (pt.x > cMaxX) cMaxX = pt.x;
+                                        if (pt.y < cMinY) cMinY = pt.y;
+                                        if (pt.y > cMaxY) cMaxY = pt.y;
+                                        if (pt.z < cMinZ) cMinZ = pt.z;
+                                        if (pt.z > cMaxZ) cMaxZ = pt.z;
+                                        foundAny = true;
+                                    }
+                                }
+                            } else {
+                                for (let i = sIdx; i <= eIdx; i++) {
+                                    let ap = State.apertures[i];
+                                    if (ap) {
+                                        // Map ALL points of the aperture to avoid visual clipping
+                                        for (let pt of ap) {
+                                            if (pt.x < cMinX) cMinX = pt.x;
+                                            if (pt.x > cMaxX) cMaxX = pt.x;
+                                            if (pt.y < cMinY) cMinY = pt.y;
+                                            if (pt.y > cMaxY) cMaxY = pt.y;
+                                            if (pt.z < cMinZ) cMinZ = pt.z;
+                                            if (pt.z > cMaxZ) cMaxZ = pt.z;
+                                            foundAny = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (foundAny) {
+                            let dx = cMaxX - cMinX;
+                            let dy = cMaxY - cMinY;
+                            let dz = cMaxZ - cMinZ;
+
+                            // Prevent degenerate bounding boxes (flat shapes or single points)
+                            if (dx < 1e-5) { cMinX -= 0.5; cMaxX += 0.5; dx = 1; }
+                            if (dy < 1e-5) { cMinY -= 0.5; cMaxY += 0.5; dy = 1; }
+                            if (dz < 1e-5) { cMinZ -= 0.5; cMaxZ += 0.5; dz = 1; }
+
+                            const padX = Math.max(dx * 0.1, 0.5);
+                            const padY = Math.max(dy * 0.1, 0.5);
+                            const padZ = Math.max(dz * 0.1, 0.5);
+
+                            if (State.overviewView === 'iso') {
+                                update3D['scene.xaxis.range'] = [cMinX - padX, cMaxX + padX];
+                                update3D['scene.yaxis.range'] = [cMinY - padY, cMaxY + padY];
+                                update3D['scene.zaxis.range'] = [cMinZ - padZ, cMaxZ + padZ];
+                            } else {
+                                if (State.overviewView === 'xy') {
+                                    update3D['xaxis.range'] = [cMinX - padX, cMaxX + padX];
+                                    update3D['yaxis.range'] = [cMinY - padY, cMaxY + padY];
+                                } else if (State.overviewView === 'xz') {
+                                    update3D['xaxis.range'] = [cMinX - padX, cMaxX + padX];
+                                    update3D['yaxis.range'] = [cMinZ - padZ, cMaxZ + padZ];
+                                } else if (State.overviewView === 'yz') {
+                                    update3D['xaxis.range'] = [cMinY - padY, cMaxY + padY];
+                                    update3D['yaxis.range'] = [cMinZ - padZ, cMaxZ + padZ];
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (Object.keys(update3D).length > 0) {
+                        promises.push(Plotly.relayout('plotOverview', update3D).catch(()=>{}));
+                    }
+                }
+                
+                Promise.all(promises).then(() => {
+                    setTimeout(() => { State.isSyncingZoom = false; }, 50);
+                });
+            });
+            
+            el._hasZoomSync = true;
+        }
+
+        function bindOverviewZoomSync() {
+            const overviewEl = document.getElementById('plotOverview');
+            if (!overviewEl || overviewEl._hasZoomSync) return;
+
+            overviewEl.on('plotly_relayout', (eventData) => {
+                if (State.isSyncingZoom) return;
+
+                let isAuto = eventData['xaxis.autorange'] === true || eventData['scene.xaxis.autorange'] === true;
+                
+                let xMin = -Infinity, xMax = Infinity;
+                let yMin = -Infinity, yMax = Infinity;
+                let zMin = -Infinity, zMax = Infinity;
+                let hasBounds = false;
+
+                if (eventData['xaxis.range[0]'] !== undefined) {
+                    xMin = eventData['xaxis.range[0]']; xMax = eventData['xaxis.range[1]']; hasBounds = true;
+                } else if (eventData['xaxis.range']) {
+                    xMin = eventData['xaxis.range'][0]; xMax = eventData['xaxis.range'][1]; hasBounds = true;
+                }
+                if (eventData['yaxis.range[0]'] !== undefined) {
+                    yMin = eventData['yaxis.range[0]']; yMax = eventData['yaxis.range[1]']; hasBounds = true;
+                } else if (eventData['yaxis.range']) {
+                    yMin = eventData['yaxis.range'][0]; yMax = eventData['yaxis.range'][1]; hasBounds = true;
+                }
+
+                if (eventData['scene.xaxis.range[0]'] !== undefined) {
+                    xMin = eventData['scene.xaxis.range[0]']; xMax = eventData['scene.xaxis.range[1]']; hasBounds = true;
+                } else if (eventData['scene.xaxis.range']) {
+                    xMin = eventData['scene.xaxis.range'][0]; xMax = eventData['scene.xaxis.range'][1]; hasBounds = true;
+                }
+                if (eventData['scene.yaxis.range[0]'] !== undefined) {
+                    yMin = eventData['scene.yaxis.range[0]']; yMax = eventData['scene.yaxis.range[1]']; hasBounds = true;
+                } else if (eventData['scene.yaxis.range']) {
+                    yMin = eventData['scene.yaxis.range'][0]; yMax = eventData['scene.yaxis.range'][1]; hasBounds = true;
+                }
+                if (eventData['scene.zaxis.range[0]'] !== undefined) {
+                    zMin = eventData['scene.zaxis.range[0]']; zMax = eventData['scene.zaxis.range[1]']; hasBounds = true;
+                } else if (eventData['scene.zaxis.range']) {
+                    zMin = eventData['scene.zaxis.range'][0]; zMax = eventData['scene.zaxis.range'][1]; hasBounds = true;
+                }
+
+                if (!hasBounds && !isAuto) return;
+
+                State.isSyncingZoom = true;
+                let update2D = {};
+                
+                if (isAuto) {
+                    update2D = {'xaxis.autorange': true};
+                } else {
+                    let minIdx = Infinity, maxIdx = -Infinity;
+                    State.centroids.forEach((c, idx) => {
+                        let inX = c.x >= xMin && c.x <= xMax;
+                        let inY = c.y >= yMin && c.y <= yMax;
+                        let inZ = c.z >= zMin && c.z <= zMax;
+
+                        let isVisible = false;
+                        if (State.overviewView === 'xy') isVisible = inX && inY;
+                        else if (State.overviewView === 'xz') isVisible = inX && inZ;
+                        else if (State.overviewView === 'yz') isVisible = inY && inZ;
+                        else isVisible = inX && inY && inZ;
+
+                        if (isVisible) {
+                            if (idx < minIdx) minIdx = idx;
+                            if (idx > maxIdx) maxIdx = idx;
+                        }
+                    });
+
+                    if (minIdx === Infinity) {
+                        State.isSyncingZoom = false;
+                        return;
+                    }
+                    
+                    update2D = {'xaxis.range': [minIdx - 0.5, maxIdx + 0.5]};
+                }
+
+                const promises = [];
+                State.active2DCharts.forEach(id => {
+                    const otherEl = document.getElementById(id);
+                    if (otherEl && !State.hiddenCharts.has(id)) {
+                        promises.push(Plotly.relayout(id, update2D).catch(()=>{}));
+                    }
+                });
+
+                Promise.all(promises).then(() => {
+                    setTimeout(() => { State.isSyncingZoom = false; }, 50);
+                });
+            });
+
+            overviewEl._hasZoomSync = true;
+        }
+
         UI.fileInput.addEventListener('change', handleFileUpload);
         UI.btnLoadSample.addEventListener('click', generateSampleData);
-        UI.btnProcess.addEventListener('click', processData);
+        UI.btnProcess.addEventListener('click', applyModificationsAndProcess);
         UI.selDimMode.addEventListener('change', toggleDimMode);
         UI.btnAddDimension.addEventListener('click', addDimensionChart);
         UI.btnEqualAxes.addEventListener('click', toggleEqualAxes);
@@ -641,7 +903,7 @@
             const bb = UI.cardBB;
             const chartWrapper = document.getElementById('overviewChartWrapper');
 
-            if (State.rawPoints.length === 0) {
+            if (!State.rawPoints || State.rawPoints.length === 0) {
                 overview.classList.add('hidden');
                 overview.classList.remove('flex');
                 steps.classList.add('hidden');
@@ -731,7 +993,7 @@
         }
 
         window.update2DCharts = function() {
-            if (State.rawPoints.length === 0) return;
+            if (!State.rawPoints || State.rawPoints.length === 0) return;
             renderStepPlots();
             renderBBPlots();
             for(let i=1; i<=State.dimensionCharts; i++){
@@ -947,17 +1209,16 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const text = e.target.result;
-                parseRawText(text);
                 UI.btnProcess.classList.add('animate-pulse');
                 setTimeout(() => UI.btnProcess.classList.remove('animate-pulse'), 1500);
-                processData();
+                parseRawText(text); 
             };
             reader.readAsText(file);
         }
 
         function parseRawText(text) {
             const lines = text.trim().split('\n');
-            State.rawPoints = [];
+            State.originalRawPoints = [];
             
             for (let line of lines) {
                 const parts = line.trim().split(/[\s,;]+/);
@@ -966,12 +1227,29 @@
                     const y = parseFloat(parts[1]);
                     const z = parseFloat(parts[2]);
                     if (!isNaN(x) && !isNaN(y) && !isNaN(z)) {
-                        State.rawPoints.push({ x, y, z });
+                        State.originalRawPoints.push({ x, y, z });
                     }
                 }
             }
-            showNotification(`Loaded ${State.rawPoints.length} valid XYZ points.`, 'success');
+            showNotification(`Loaded ${State.originalRawPoints.length} valid XYZ points.`, 'success');
+            applyModificationsAndProcess(); 
         }
+
+        function applyModificationsAndProcess() {
+            if (!State.originalRawPoints || State.originalRawPoints.length === 0) return;
+            
+            const invX = document.getElementById('chkInvertX').checked;
+            const invY = document.getElementById('chkInvertY').checked;
+            
+            State.rawPoints = State.originalRawPoints.map(p => ({
+                x: invX ? -p.x : p.x,
+                y: invY ? -p.y : p.y,
+                z: p.z
+            }));
+            
+            processData();
+        }
+        window.applyModificationsAndProcess = applyModificationsAndProcess;
 
         function generateSampleData() {
             const gridRows = 4;
@@ -1012,12 +1290,11 @@
                 }
             }
 
-            parseRawText(textData);
-            processData(); 
+            parseRawText(textData); 
         }
 
         function processData() {
-            if (State.rawPoints.length === 0) {
+            if (!State.rawPoints || State.rawPoints.length === 0) {
                 showNotification("Please load a data file or sample data first.", 'error');
                 return;
             }
@@ -1231,8 +1508,6 @@
                 let t2 = (!isNaN(tol2Val) && tol2Val > 0) ? tol2Val : null;
                 let t3 = (!isNaN(tol3Val) && tol3Val > 0) ? tol3Val : null;
 
-                // Sort the valid tolerances descending so the largest is drawn first
-                // This ensures color bands cleanly layer over each other and T3 remains visible
                 let validTols = [
                     { val: t3, color: '#ef4444', op: 0.10 }, // Red (Critical)
                     { val: t2, color: '#f59e0b', op: 0.15 }, // Amber (Warn)
@@ -1248,7 +1523,6 @@
                     });
                 });
                 
-                // Keep the nominal reference dashed line drawn last (on top)
                 shapes.push({
                     type: 'line', y0: nomVal, y1: nomVal,
                     x0: 0, x1: 1, xref: 'paper', yref: 'y',
@@ -1304,7 +1578,6 @@
 
             const validVals = data.filter(d => d !== null && d !== undefined);
             if (validVals.length > 0) {
-                // Fix capitalization for Width and Height metric IDs
                 let suffix = metricId;
                 if (metricId === 'bbX') suffix = 'BBX';
                 else if (metricId === 'bbY') suffix = 'BBY';
@@ -1346,11 +1619,37 @@
                 // Target ~0.27% empirical fails (approx ~3-sigma distribution)
                 let t3Val = findBestTolerance(deviations, 0.0027);
 
+                const t1Input = document.getElementById(metricId.startsWith('dimChart_') ? `tol1Dim_${metricId.split('_')[1]}` : `inpTol1${suffix}`);
+                const t1Val = t1Input ? parseFloat(t1Input.value) : NaN;
+
+                let finalT2 = '';
+                let finalT3 = '';
+
+                if (!isNaN(t1Val)) {
+                    if (t1Val >= t3Val) {
+                        // T1 is looser than 3-Sigma; clear both T2 and T3
+                        finalT2 = '';
+                        finalT3 = '';
+                    } else if (t1Val >= t2Val) {
+                        // T1 is looser than 1-Sigma but tighter than 3-Sigma; push 3-Sigma to T2, clear T3
+                        finalT2 = parseFloat(t3Val.toFixed(2));
+                        finalT3 = '';
+                    } else {
+                        // T1 is tighter than 1-Sigma; populate standard 1-Sigma (T2) and 3-Sigma (T3)
+                        finalT2 = parseFloat(t2Val.toFixed(2));
+                        finalT3 = parseFloat(t3Val.toFixed(2));
+                    }
+                } else {
+                    // No T1 provided; populate standard 1-Sigma and 3-Sigma
+                    finalT2 = parseFloat(t2Val.toFixed(2));
+                    finalT3 = parseFloat(t3Val.toFixed(2));
+                }
+
                 let t2Input = document.getElementById(metricId.startsWith('dimChart_') ? `tol2Dim_${metricId.split('_')[1]}` : `inpTol2${suffix}`);
                 let t3Input = document.getElementById(metricId.startsWith('dimChart_') ? `tol3Dim_${metricId.split('_')[1]}` : `inpTol3${suffix}`);
 
-                if (t2Input) t2Input.value = parseFloat(t2Val.toFixed(2));
-                if (t3Input) t3Input.value = parseFloat(t3Val.toFixed(2));
+                if (t2Input) t2Input.value = finalT2;
+                if (t3Input) t3Input.value = finalT3;
             }
 
             if (metricId.startsWith('dimChart_')) {
@@ -1445,7 +1744,7 @@
         }
 
         function update3DOverview() {
-            if (State.rawPoints.length === 0) return;
+            if (!State.rawPoints || State.rawPoints.length === 0) return;
             
             const activeMetrics = Object.values(State.metricsData).filter(m => m.hasTol);
             const container = document.getElementById('failFilterContainer');
@@ -1492,9 +1791,9 @@
         function renderOverviewPlot() {
             let plotX = [], plotY = [], plotZ = [], plotText = [], plotColors = [], plotTextArr = [];
             const baseColor = UI.inpMarkerColor.value || '#3b82f6';
-            const criticalColor = '#ef4444'; // Red (T3)
-            const warnColor = '#f97316';     // Orange (T2)
-            const noticeColor = '#eab308';   // Yellow (T1)
+            const criticalColor = '#ef4444'; 
+            const warnColor = '#f97316';     
+            const noticeColor = '#eab308';   
             const centroidColor = UI.inpCentroidColor.value || '#94a3b8';
             const highlightFailures = UI.chkHighlightTol.checked;
             const showLabels = UI.chkShowLabels.checked;
@@ -1504,7 +1803,6 @@
             const is2D = view !== 'iso';
             const theme = getThemeLayout();
 
-            // Update Legend UI
             const legBase = document.getElementById('legBase');
             const legCentroid = document.getElementById('legCentroid');
             const overviewLegend = document.getElementById('overviewLegend');
@@ -1615,6 +1913,7 @@
             }
 
             Plotly.react('plotOverview', [tracePoints, traceCentroids], layout, {responsive: true});
+            bindOverviewZoomSync();
         }
 
         function renderStepPlots() {
@@ -1679,6 +1978,10 @@
                 shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomAngle').value), parseFloat(document.getElementById('inpTol1Angle').value), parseFloat(document.getElementById('inpTol2Angle').value), parseFloat(document.getElementById('inpTol3Angle').value))
             }, {responsive: true});
 
+            bindZoomSync('plotStepX');
+            bindZoomSync('plotStepY');
+            bindZoomSync('plotAngle');
+
             update3DOverview();
         }
 
@@ -1728,6 +2031,9 @@
                 shapes: getToleranceShapes(parseFloat(document.getElementById('inpNomBBY').value), parseFloat(document.getElementById('inpTol1BBY').value), parseFloat(document.getElementById('inpTol2BBY').value), parseFloat(document.getElementById('inpTol3BBY').value))
             }, {responsive: true});
             
+            bindZoomSync('plotBBX');
+            bindZoomSync('plotBBY');
+
             update3DOverview();
         }
 
@@ -1784,6 +2090,8 @@
                 paper_bgcolor: theme.paper_bgcolor, plot_bgcolor: theme.plot_bgcolor, font: { color: theme.fontColor }, showlegend: false,
                 shapes: getToleranceShapes(parseFloat(document.getElementById(`nomDim_${idx}`).value), parseFloat(document.getElementById(`tol1Dim_${idx}`).value), parseFloat(document.getElementById(`tol2Dim_${idx}`).value), parseFloat(document.getElementById(`tol3Dim_${idx}`).value))
             }, {responsive: true});
+
+            bindZoomSync(chartDivId);
 
             update3DOverview();
         }
@@ -1931,10 +2239,13 @@
             }
 
             const config = { mode, metric, metricName, valA, valB, ptAName, ptBName };
+            UI.emptyDimensionMsg.classList.add('hidden');
+            addDimensionChartProgrammatic(config, '', '', '', '');
+        }
+
+        function addDimensionChartProgrammatic(config, nom, t1, t2, t3) {
             const result = computeCustomDimData(config);
             if (!result) return;
-
-            UI.emptyDimensionMsg.classList.add('hidden');
 
             State.dimensionCharts++;
             const idx = State.dimensionCharts;
@@ -1944,7 +2255,7 @@
                 values: result.dimensions, 
                 labels: result.chartLabels, 
                 xAxisTitle: result.xAxisTitle, 
-                metric: metric, 
+                metric: config.metric, 
                 title: result.title 
             };
 
@@ -1971,13 +2282,13 @@
                             <input type="number" id="maxDim_${idx}" placeholder="Max" step="any" class="dark:bg-slate-700 dark:border-slate-600 dark:text-white" onchange="applyScale('${chartDivId}', 'minDim_${idx}', 'maxDim_${idx}')">
                         </div>
                         <div class="flex items-center gap-1">
-                            <input type="number" id="nomDim_${idx}" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="nomDim_${idx}" placeholder="Nom" step="any" class="w-14 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})" value="${nom}">
                             <span class="text-xs text-slate-400">&plusmn;</span>
-                            <input type="number" id="tol1Dim_${idx}" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('dimChart_${idx}')" data-metric="dimChart_${idx}">
+                            <input type="number" id="tol1Dim_${idx}" placeholder="T1" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="onTol1Input('dimChart_${idx}')" data-metric="dimChart_${idx}" value="${t1}">
                             <span class="text-[10px] text-slate-400">/</span>
-                            <input type="number" id="tol2Dim_${idx}" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="tol2Dim_${idx}" placeholder="T2" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})" value="${t2}">
                             <span class="text-[10px] text-slate-400">/</span>
-                            <input type="number" id="tol3Dim_${idx}" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="tol3Dim_${idx}" placeholder="T3" step="any" class="w-12 dark:bg-slate-700 dark:border-slate-600 dark:text-white" oninput="renderCustomDimChart(${idx})" value="${t3}">
                         </div>
                         <div class="border-l border-slate-300 dark:border-slate-600 pl-1">
                             <button onclick="downloadPlot('${chartDivId}', '${result.title.replace(/['"]/g, '\\"')}')" class="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1" title="Download PNG"><i class="fa-solid fa-camera"></i></button>
@@ -1987,7 +2298,11 @@
                 <div id="${chartDivId}" class="w-full flex-1 min-h-[250px]"></div>
             `;
             UI.dynamicChartsContainer.appendChild(wrapper);
-            renderCustomDimChart(idx);
+            State.active2DCharts.add(chartDivId);
+            
+            if (State.rawPoints && State.rawPoints.length > 0) {
+                renderCustomDimChart(idx);
+            }
         }
 
         function addNeighborPreset(metricType) {
@@ -2017,10 +2332,170 @@
             delete State.metricsData[chartId];
             State.activeFailFilters.delete(chartId);
             State.knownMetrics.delete(chartId);
+            State.active2DCharts.delete(chartId);
             
             element.remove();
             if (UI.dynamicChartsContainer.querySelectorAll('.border').length === 0) UI.emptyDimensionMsg.classList.remove('hidden');
             update3DOverview();
+        }
+
+        function exportSettings() {
+            const settings = {
+                partNum: document.getElementById('inpPartNum').value,
+                serialNum: document.getElementById('inpSerialNum').value,
+                comments: document.getElementById('inpComments').value,
+                threshold: document.getElementById('inpThreshold').value,
+                invertX: document.getElementById('chkInvertX').checked,
+                invertY: document.getElementById('chkInvertY').checked,
+                companyName: document.getElementById('inpCompanyName').value,
+                accentColor: document.getElementById('inpAccentColor').value,
+                markerColor: document.getElementById('inpMarkerColor').value,
+                centroidColor: document.getElementById('inpCentroidColor').value,
+                markerSize: document.getElementById('inpMarkerSize').value,
+                centroidSize: document.getElementById('inpCentroidSize').value,
+                showLabels: document.getElementById('chkShowLabels').checked,
+                highlightTol: document.getElementById('chkHighlightTol').checked,
+                layoutMode: document.getElementById('selLayoutMode').value,
+                point2DSize: document.getElementById('inp2DMarkerSize').value,
+                hiddenCharts: Array.from(State.hiddenCharts),
+                tolerances: {},
+                customDimsConfig: []
+            };
+
+            const metrics = ['StepX', 'StepY', 'Angle', 'BBX', 'BBY'];
+            metrics.forEach(m => {
+                settings.tolerances[m] = {
+                    nom: document.getElementById(`inpNom${m}`)?.value || '',
+                    t1: document.getElementById(`inpTol1${m}`)?.value || '',
+                    t2: document.getElementById(`inpTol2${m}`)?.value || '',
+                    t3: document.getElementById(`inpTol3${m}`)?.value || ''
+                };
+            });
+
+            for (let id in State.customDims) {
+                const dim = State.customDims[id];
+                const idx = id.split('_')[1];
+                settings.customDimsConfig.push({
+                    config: dim.config,
+                    nom: document.getElementById(`nomDim_${idx}`)?.value || '',
+                    t1: document.getElementById(`tol1Dim_${idx}`)?.value || '',
+                    t2: document.getElementById(`tol2Dim_${idx}`)?.value || '',
+                    t3: document.getElementById(`tol3Dim_${idx}`)?.value || ''
+                });
+            }
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(settings, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "ATA_Settings.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            showNotification("Settings exported successfully.", "success");
+        }
+
+        function importSettings(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const settings = JSON.parse(e.target.result);
+                    
+                    const setVal = (id, val) => { if (val !== undefined && document.getElementById(id)) document.getElementById(id).value = val; };
+                    const setChk = (id, val) => { if (val !== undefined && document.getElementById(id)) document.getElementById(id).checked = val; };
+
+                    setVal('inpPartNum', settings.partNum);
+                    setVal('inpSerialNum', settings.serialNum);
+                    setVal('inpComments', settings.comments);
+                    setVal('inpThreshold', settings.threshold);
+                    setChk('chkInvertX', settings.invertX);
+                    setChk('chkInvertY', settings.invertY);
+                    
+                    if (settings.companyName !== undefined) {
+                        setVal('inpCompanyName', settings.companyName);
+                        if (UI.sidebarCompanyText) UI.sidebarCompanyText.innerText = settings.companyName.toUpperCase();
+                    }
+                    setVal('inpAccentColor', settings.accentColor);
+                    setVal('inpMarkerColor', settings.markerColor);
+                    setVal('inpCentroidColor', settings.centroidColor);
+                    setVal('inpMarkerSize', settings.markerSize);
+                    setVal('inpCentroidSize', settings.centroidSize);
+                    setChk('chkShowLabels', settings.showLabels);
+                    setChk('chkHighlightTol', settings.highlightTol);
+                    
+                    if (settings.layoutMode !== undefined) {
+                        setVal('selLayoutMode', settings.layoutMode);
+                        updateLayoutMode();
+                    }
+                    if (settings.point2DSize !== undefined) setVal('inp2DMarkerSize', settings.point2DSize);
+
+                    restoreDefaultCharts();
+                    if (settings.hiddenCharts && Array.isArray(settings.hiddenCharts)) {
+                        const plotToInfo = {
+                            'plotStepX': { wrap: 'wrapper_stepX', metric: 'stepX' },
+                            'plotStepY': { wrap: 'wrapper_stepY', metric: 'stepY' },
+                            'plotAngle': { wrap: 'wrapper_angle', metric: 'angle' },
+                            'plotBBX': { wrap: 'wrapper_bbX', metric: 'bbX' },
+                            'plotBBY': { wrap: 'wrapper_bbY', metric: 'bbY' }
+                        };
+                        settings.hiddenCharts.forEach(plotId => {
+                            if (plotToInfo[plotId]) {
+                                hideDefaultChart(plotId, plotToInfo[plotId].wrap, plotToInfo[plotId].metric);
+                            }
+                        });
+                    }
+
+                    if (settings.tolerances) {
+                        const metrics = ['StepX', 'StepY', 'Angle', 'BBX', 'BBY'];
+                        metrics.forEach(m => {
+                            if (settings.tolerances[m]) {
+                                setVal(`inpNom${m}`, settings.tolerances[m].nom);
+                                setVal(`inpTol1${m}`, settings.tolerances[m].t1);
+                                setVal(`inpTol2${m}`, settings.tolerances[m].t2);
+                                setVal(`inpTol3${m}`, settings.tolerances[m].t3);
+                            }
+                        });
+                    }
+
+                    UI.dynamicChartsContainer.querySelectorAll('.border').forEach(el => el.remove());
+                    State.customDims = {};
+                    State.dimensionCharts = 0;
+                    State.active2DCharts = new Set(['plotStepX', 'plotStepY', 'plotAngle', 'plotBBX', 'plotBBY']);
+                    
+                    Object.keys(State.metricsData).forEach(mId => {
+                        if (mId.startsWith('dimChart_')) {
+                            delete State.metricsData[mId];
+                            delete State.metricFails[mId];
+                            State.activeFailFilters.delete(mId);
+                            State.knownMetrics.delete(mId);
+                        }
+                    });
+
+                    if (settings.customDimsConfig && settings.customDimsConfig.length > 0) {
+                        UI.emptyDimensionMsg.classList.add('hidden');
+                        settings.customDimsConfig.forEach(dim => {
+                            addDimensionChartProgrammatic(dim.config, dim.nom, dim.t1, dim.t2, dim.t3);
+                        });
+                    } else {
+                        UI.emptyDimensionMsg.classList.remove('hidden');
+                    }
+
+                    if (State.originalRawPoints && State.originalRawPoints.length > 0) {
+                        applyModificationsAndProcess();
+                    } else {
+                        update3DOverview();
+                    }
+                    
+                    showNotification("Settings imported successfully.", "success");
+                } catch (err) {
+                    console.error("Import error: ", err);
+                    showNotification("Failed to parse settings file.", "error");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         async function downloadPlot(plotId, chartTitle) {
