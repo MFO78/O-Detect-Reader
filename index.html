@@ -2243,7 +2243,7 @@
             addDimensionChartProgrammatic(config, '', '', '', '');
         }
 
-        function addDimensionChartProgrammatic(config, nom, t1, t2, t3) {
+        function addDimensionChartProgrammatic(config, nom, t1, t2, t3, fMin = '', fMax = '') {
             const result = computeCustomDimData(config);
             if (!result) return;
 
@@ -2273,8 +2273,8 @@
                     <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/30 p-1.5 rounded border border-slate-200 dark:border-slate-700 w-full">
                         <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                             <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Data<br>Filter</span>
-                            <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})">
-                            <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})">
+                            <input type="number" id="fMinDim_${idx}" placeholder="Min" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})" value="${fMin}">
+                            <input type="number" id="fMaxDim_${idx}" placeholder="Max" step="any" class="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 dark:text-white" oninput="renderCustomDimChart(${idx})" value="${fMax}">
                         </div>
                         <div class="flex items-center gap-1 border-r border-slate-300 dark:border-slate-600 pr-2">
                             <span class="text-[9px] text-slate-500 dark:text-slate-400 uppercase text-center leading-tight">Scale</span>
@@ -2358,7 +2358,10 @@
                 layoutMode: document.getElementById('selLayoutMode').value,
                 point2DSize: document.getElementById('inp2DMarkerSize').value,
                 hiddenCharts: Array.from(State.hiddenCharts),
+                logoDataUrl: State.logoDataUrl,
+                logoFormat: State.logoFormat,
                 tolerances: {},
+                filters: {},
                 customDimsConfig: []
             };
 
@@ -2370,6 +2373,10 @@
                     t2: document.getElementById(`inpTol2${m}`)?.value || '',
                     t3: document.getElementById(`inpTol3${m}`)?.value || ''
                 };
+                settings.filters[m] = {
+                    min: document.getElementById(`fMin${m}`)?.value || '',
+                    max: document.getElementById(`fMax${m}`)?.value || ''
+                };
             });
 
             for (let id in State.customDims) {
@@ -2380,7 +2387,9 @@
                     nom: document.getElementById(`nomDim_${idx}`)?.value || '',
                     t1: document.getElementById(`tol1Dim_${idx}`)?.value || '',
                     t2: document.getElementById(`tol2Dim_${idx}`)?.value || '',
-                    t3: document.getElementById(`tol3Dim_${idx}`)?.value || ''
+                    t3: document.getElementById(`tol3Dim_${idx}`)?.value || '',
+                    fMin: document.getElementById(`fMinDim_${idx}`)?.value || '',
+                    fMax: document.getElementById(`fMaxDim_${idx}`)?.value || ''
                 });
             }
 
@@ -2431,6 +2440,15 @@
                     }
                     if (settings.point2DSize !== undefined) setVal('inp2DMarkerSize', settings.point2DSize);
 
+                    if (settings.logoDataUrl) {
+                        State.logoDataUrl = settings.logoDataUrl;
+                        State.logoFormat = settings.logoFormat || 'PNG';
+                        UI.logoPreview.src = State.logoDataUrl;
+                        UI.logoPreviewContainer.classList.remove('hidden');
+                    } else {
+                        removeLogo();
+                    }
+
                     restoreDefaultCharts();
                     if (settings.hiddenCharts && Array.isArray(settings.hiddenCharts)) {
                         const plotToInfo = {
@@ -2456,6 +2474,10 @@
                                 setVal(`inpTol2${m}`, settings.tolerances[m].t2);
                                 setVal(`inpTol3${m}`, settings.tolerances[m].t3);
                             }
+                            if (settings.filters && settings.filters[m]) {
+                                setVal(`fMin${m}`, settings.filters[m].min);
+                                setVal(`fMax${m}`, settings.filters[m].max);
+                            }
                         });
                     }
 
@@ -2476,7 +2498,7 @@
                     if (settings.customDimsConfig && settings.customDimsConfig.length > 0) {
                         UI.emptyDimensionMsg.classList.add('hidden');
                         settings.customDimsConfig.forEach(dim => {
-                            addDimensionChartProgrammatic(dim.config, dim.nom, dim.t1, dim.t2, dim.t3);
+                            addDimensionChartProgrammatic(dim.config, dim.nom, dim.t1, dim.t2, dim.t3, dim.fMin, dim.fMax);
                         });
                     } else {
                         UI.emptyDimensionMsg.classList.remove('hidden');
